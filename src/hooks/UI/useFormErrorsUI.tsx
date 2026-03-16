@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { APIError } from "../../lib/ErrorTypes";
 
 export function useFormErrorsUI() {
     const [validationErrors, setValidationErrors] = useState<{ path?: string; message?: string }[]>([]);
@@ -7,9 +8,9 @@ export function useFormErrorsUI() {
         setValidationErrors((prev) => [...prev, { path, message }]);
     };
 
-    const setFormErrors = (errors: { path?: string; message?: string }[], errorType: string) => {
-        if (errorType === 'Validation Error') {
-            setValidationErrors(errors);
+    const setFormErrors = (errors: APIError) => {
+        if (errors.message === 'Validation Error') {
+            setValidationErrors(errors.errors as any[]);
         }
     };
 

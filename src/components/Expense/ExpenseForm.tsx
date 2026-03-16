@@ -211,10 +211,7 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
 
         try {
             let id = expenseId
-            console.log('payload', payload, id, expenseId);
-            alert('payload');
             if (expenseId) {
-                // @ts-ignore
                 await updateExpense.mutateAsync({ id: expenseId, dto: payload, groupMembers: payload.groupMembers });
             } else {
                 // @ts-ignore
@@ -224,7 +221,7 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
             onSuccess?.();
             navigate(`/expenses/view/${id}`);
         } catch (error: any) {
-            setFormErrors(error?.error as [], error?.errorType);
+            setFormErrors(error);
         }
     };
 

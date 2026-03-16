@@ -90,7 +90,7 @@ export function GroupSettingsPage() {
         try {
             await removeMember.mutateAsync({ groupId: group.id, userId });
         } catch (err: any) {
-            setFormErrors(err?.error as [], err?.errorType);
+            setFormErrors(err);
             console.error('Failed to remove member:', err);
         }
     };
@@ -100,7 +100,7 @@ export function GroupSettingsPage() {
             await leaveGroup.mutateAsync({ groupId: group.id, userId: currentUserId });
         } catch (err: any) {
             setShowLeaveConfirm(false);
-            setFormErrors(err?.error as [], err?.errorType);
+            setFormErrors(err);
             console.error('Failed to leave group:', err);
         }
     };
@@ -110,7 +110,7 @@ export function GroupSettingsPage() {
             await deleteGroup.mutateAsync(group.id);
             navigate('/groups');
         } catch (err: any) {
-            setFormErrors(err?.error as [], err?.errorType);
+            setFormErrors(err);
             console.error('Failed to delete group:', err);
         }
     };
