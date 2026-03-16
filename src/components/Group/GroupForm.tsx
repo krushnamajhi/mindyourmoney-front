@@ -42,7 +42,7 @@ export function GroupForm() {
             });
             dispatch(closeModal());
         } catch (error: any) {
-            setFormErrors(error?.error as [], error?.errorType);
+            setFormErrors(error);
         }
     };
 

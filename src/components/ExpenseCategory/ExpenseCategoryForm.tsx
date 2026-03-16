@@ -44,7 +44,7 @@ export function ExpenseCategoryForm() {
             }
             dispatch(closeModal());
         } catch (err: any) {
-            setFormErrors(err?.error as [], err?.errorType);
+            setFormErrors(err);
         }
     };
 
