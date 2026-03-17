@@ -1,17 +1,15 @@
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { MainLayout } from '../components/Layout/MainLayout';
 import { useGroup } from '../hooks/useGroups';
-import { useExpensesByGroupId } from '../hooks/useExpenses';
+import { useFilterExpenseRows } from '../hooks/useExpenses';
 import { Plus, Settings, Receipt, Wallet, ArrowLeft } from 'lucide-react';
 import { clsx } from 'clsx';
 import { ExpenseForm } from '../components/Expense/ExpenseForm';
 import { Loader } from '../components/UI/Loader';
 import { ErrorDisplay } from '../components/UI/ErrorDisplay';
-import { ExpenseRow } from '../components/Expense/ExpenseRow';
-import { ExpenseRowSettled } from '../components/Expense/ExpenseRowSettled';
-import type { User } from '../domain/models';
-import { useSettledExpenses } from '../hooks/useSettledExpense';
+import { ExpenseRowsByDate } from '../components/Expense/ExpenseRowsByDate';
+import { Filter_ALL, type ExpenseRow } from '../domain/models';
 
 type Tab = 'expenses' | 'balances';
 
@@ -19,23 +17,25 @@ export function GroupDetailsPage() {
     const { groupId } = useParams<{ groupId: string }>();
     const navigate = useNavigate();
     const { data: group, isLoading: isGroupLoading, error: groupError } = useGroup(groupId!);
-    const { data: expenses, isLoading: isExpensesLoading, error: expensesError } = useExpensesByGroupId(groupId!);
-    const { data: settledExpenses } = useSettledExpenses();
+    const numericGroupId = groupId ? Number(groupId) : undefined;
+    const { data: expenseRows, isLoading: isExpensesLoading, error: expensesError } = useFilterExpenseRows(
+        {
+            title: '',
+            groupId: numericGroupId ? [numericGroupId] : Filter_ALL,
+            expenseCategoryId: Filter_ALL,
+            isShared: [true],
+        },
+        !!numericGroupId,
+    );
     const [activeTab, setActiveTab] = useState<Tab>('expenses');
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
 
-    const users = useMemo(() => {
-        return group?.groupMembers
-            .map(gm => gm.user)
-            .filter((u): u is User => !!u) || [];
-    }, [group]);
-
-    const handleRowClick = useCallback((id: string) => {
-        navigate(`/expenses/view/${id}`);
-    }, [navigate]);
-
-    const handleRowClickSettled = useCallback((id: string) => {
-        navigate(`/expenses/settle/view/${id}`);
+    const handleRowClick = useCallback((expense: ExpenseRow) => {
+        if (expense.isSettled) {
+            navigate(`/expenses/settle/view/${expense.id}`);
+            return;
+        }
+        navigate(`/expenses/view/${expense.id}`);
     }, [navigate]);
 
     if (isGroupLoading) {
@@ -118,7 +118,7 @@ export function GroupDetailsPage() {
                                 </div>
                             ) : expensesError ? (
                                 <ErrorDisplay message="Failed to load expenses." />
-                            ) : expenses?.length === 0 ? (
+                            ) : !expenseRows || expenseRows.length === 0 ? (
                                 <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                                     <p className="text-slate-500">No expenses yet.</p>
                                     <button
@@ -128,25 +128,7 @@ export function GroupDetailsPage() {
                                         Add the first one
                                     </button>
                                 </div>
-                            ) : (
-                                <div className="space-y-3 px-3">
-                                    {expenses?.map(expense => (
-                                        <div key={expense.id}>
-                                            {expense.isSettled ? (
-                                                <ExpenseRowSettled 
-                                                    onClick={handleRowClickSettled} 
-                                                    expense={expense} 
-                                                    settledExpense={settledExpenses?.find(se => String(se.expenseId) === String(expense.id)) as any}
-                                                    users={users} 
-                                                    isGroupExpenseRow={true} 
-                                                />
-                                            ) : (
-                                                <ExpenseRow onClick={handleRowClick} expense={expense} />
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            ) : <ExpenseRowsByDate rows={expenseRows} onExpenseClick={handleRowClick} hideGroupTag />}
                         </div>
                     )}
 

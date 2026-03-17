@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreateExpenseDto, Expense, ExpenseFilters } from '../domain/models';
+import type { CreateExpenseDto, Expense, ExpenseFilters, ExpenseRowYearWise } from '../domain/models';
 import { ExpenseService } from '../services/ExpenseService';
 import { retryService } from '../utils/common';
 
@@ -18,6 +18,14 @@ export function useFilterExpenses(filters: ExpenseFilters) {
     return useQuery({
         queryKey: ['expenses', 'filter', filters],
         queryFn: () => ExpenseService.filterExpenses(filters),
+    });
+}
+
+export function useFilterExpenseRows(filters: ExpenseFilters, enabled: boolean = true) {
+    return useQuery<ExpenseRowYearWise[]>({
+        queryKey: ['expenses', 'filter', 'rows', filters],
+        queryFn: () => ExpenseService.filterExpenseRows(filters),
+        enabled,
     });
 }
 

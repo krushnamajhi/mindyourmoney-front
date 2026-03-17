@@ -1,55 +1,108 @@
+import { useCallback, useMemo } from 'react';
 import { Plus, TrendingUp, TrendingDown, Bell } from 'lucide-react';
-import { MainLayout } from '../components/Layout/MainLayout';
-import { useExpenses } from '../hooks/useExpenses';
 import { useNavigate } from 'react-router-dom';
+import { MainLayout } from '../components/Layout/MainLayout';
 import { HeaderLayout } from '../components/Layout/HeaderLayout';
 import { Button } from '../components/UI/Button';
 import { FinancialCard } from '../components/Dashboard/FinancialCard';
-import { ExpenseRow } from '../components/Expense/ExpenseRow';
 import { BudgetOverviewCard } from '../components/Dashboard/BudgetOverviewCard';
 import { HeaderSearchInput } from '../components/UI/HeaderSearchInput';
-import { ExpenseRowSettled } from '../components/Expense/ExpenseRowSettled';
-import { useCallback } from 'react';
-import { useUsers } from '../hooks/useUsers';
-import { useSettledExpenses } from '../hooks/useSettledExpense';
-import { ErrorDisplay } from '../components/UI/ErrorDisplay';
 import { Loader } from '../components/UI/Loader';
 import { Message } from '../components/UI/Message';
+import { ExpenseRowsByDate } from '../components/Expense/ExpenseRowsByDate';
+import { useFilterExpenseRows } from '../hooks/useExpenses';
+import { Filter_ALL, type ExpenseRow, type ExpenseRowYearWise, type ExpenseRowMonthWise, type ExpenseRowDayWise } from '../domain/models';
+
 export function Dashboard() {
-    const { data: expenses, isLoading: isExpenseLoading } = useExpenses();
-    const { data: settledExpenses, isLoading: settledExpensesLoading } = useSettledExpenses();
     const navigate = useNavigate();
-    const { data: users } = useUsers();
+    const { data: recentExpenseRows, isLoading } = useFilterExpenseRows({
+        title: '',
+        groupId: Filter_ALL,
+        expenseCategoryId: Filter_ALL,
+        isShared: Filter_ALL,
+        limit: 5,
+    });
 
-    const handleRowClick = useCallback((id: string) => {
-        navigate(`/expenses/view/${id}`);
+    const handleExpenseClick = useCallback((expense: ExpenseRow) => {
+        if (expense.isSettled) {
+            navigate(`/expenses/settle/view/${expense.id}`);
+            return;
+        }
+        navigate(`/expenses/view/${expense.id}`);
     }, [navigate]);
 
-    const handleRowClickSettled = useCallback((id: string) => {
-        navigate(`/expenses/settle/view/${id}`);
-    }, [navigate]);
+    const recentExpenseRowsLimited = useMemo<ExpenseRowYearWise[]>(() => {
+        if (!recentExpenseRows || recentExpenseRows.length === 0) return [];
 
-    const renderError = () => {
-        if (isExpenseLoading || settledExpensesLoading) {
-            return <Loader size='lg' text='Loading Expenses...' />;
+        const limitedFlatRows: ExpenseRow[] = [];
+        for (const year of recentExpenseRows) {
+            for (const month of year.expensesPerYear) {
+                for (const day of month.expensesPerMonth) {
+                    for (const expense of day.expensesPerDay) {
+                        if (limitedFlatRows.length >= 10) break;
+                        limitedFlatRows.push(expense);
+                    }
+                    if (limitedFlatRows.length >= 10) break;
+                }
+                if (limitedFlatRows.length >= 10) break;
+            }
+            if (limitedFlatRows.length >= 10) break;
         }
-        if (expenses?.length === 0) {
-            return <Message message="No expenses found." />;
-        }
-        if (settledExpenses?.length === 0) {
-            if (expenses?.find(expense => expense.isSettled))
-                return <ErrorDisplay message="No settled expenses found." />;
-            else
-                return null;
-        }
-        return null;
-    }
 
+        const groupedByYear = new Map<number, Map<number, Map<number, ExpenseRow[]>>>();
+        for (const expense of limitedFlatRows) {
+            const date = new Date(expense.expenseDate);
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const day = date.getDate();
+
+            let months = groupedByYear.get(year);
+            if (!months) {
+                months = new Map<number, Map<number, ExpenseRow[]>>();
+                groupedByYear.set(year, months);
+            }
+            let days = months.get(month);
+            if (!days) {
+                days = new Map<number, ExpenseRow[]>();
+                months.set(month, days);
+            }
+            let expenses = days.get(day);
+            if (!expenses) {
+                expenses = [];
+                days.set(day, expenses);
+            }
+            expenses.push(expense);
+        }
+
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December',
+        ];
+
+        return Array.from(groupedByYear.entries())
+            .sort(([a], [b]) => b - a)
+            .map(([year, months]) => {
+                const expensesPerYear: ExpenseRowMonthWise[] = Array.from(months.entries())
+                    .sort(([a], [b]) => b - a)
+                    .map(([monthIndex, days]) => {
+                        const expensesPerMonth: ExpenseRowDayWise[] = Array.from(days.entries())
+                            .sort(([a], [b]) => b - a)
+                            .map(([day, expensesPerDay]) => ({ day, expensesPerDay }));
+                        return {
+                            month: monthNames[monthIndex] ?? 'Unknown',
+                            expensesPerMonth,
+                        };
+                    });
+                return {
+                    year,
+                    expensesPerYear,
+                };
+            });
+    }, [recentExpenseRows]);
 
     return (
         <MainLayout>
             <div className="space-y-8">
-                {/* Header */}
                 <HeaderLayout title="Financial Overview" description="Welcome back, here's what's happening with your money." size="md">
                     <HeaderSearchInput placeholder="Search transactions..." />
                     <button className="text-slate-400 hover:text-slate-600 relative">
@@ -64,9 +117,7 @@ export function Dashboard() {
                     </Button>
                 </HeaderLayout>
 
-                {/* Financial Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Total Balance */}
                     <FinancialCard title="Total Balance" amount={48250} description="Updated 5 mins ago" percentage={2.4}
                         icon={
                             <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-4">
@@ -75,7 +126,6 @@ export function Dashboard() {
                         }
                     />
 
-                    {/* Monthly Income */}
                     <FinancialCard title="Monthly Income" amount={7400} description="Updated 5 mins ago" percentage={12}
                         icon={
                             <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-4">
@@ -84,7 +134,6 @@ export function Dashboard() {
                         }
                     />
 
-                    {/* Monthly Expenses */}
                     <FinancialCard title="Monthly Expenses" amount={3120.45} description="Updated 5 mins ago" percentage={-5}
                         icon={
                             <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 mb-4">
@@ -94,42 +143,29 @@ export function Dashboard() {
                     />
                 </div>
 
-                {/* Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Recent Transactions */}
-                    <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6 glass-morphism rounded-2xl p-6 transition-all hover:shadow-2xl">
-                        {renderError() || (
-                            <div>
-                                <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-lg font-bold text-slate-900">Recent Expenses</h3>
-                                    <button className="text-sm font-medium text-primary-600 hover:text-primary-700" onClick={() => navigate('/expenses')}>View All</button>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <div className="w-full">
-                                        <div className="divide-y divide-slate-50">
-                                            {expenses?.slice(0, 6).map(expense => (
-                                                <div key={expense.id}>
-                                                    {expense.isSettled ? (
-                                                        <ExpenseRowSettled
-                                                            onClick={handleRowClickSettled}
-                                                            expense={expense}
-                                                            settledExpense={settledExpenses?.find(se => String(se.expenseId) === String(expense.id)) as any}
-                                                            users={users}
-                                                        />
-                                                    ) : (
-                                                        <ExpenseRow onClick={handleRowClick} expense={expense} />
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 glass-morphism rounded-2xl p-6 transition-all hover:shadow-2xl">
+                        <div className="flex items-center justify-between mb-1">
+                            <h3 className="text-lg font-bold text-slate-900">Recent Expenses</h3>
+                            <button className="text-sm font-medium text-primary-600 hover:text-primary-700" onClick={() => navigate('/expenses')}>View All</button>
+                        </div>
+
+                        {isLoading ? (
+                            <Loader size='lg' text='Loading Expenses...' />
+                        ) : !recentExpenseRows || recentExpenseRows.length === 0 ? (
+                            <Message message="No expenses found." />
+                        ) : (
+                            <ExpenseRowsByDate
+                                rows={recentExpenseRowsLimited}
+                                onExpenseClick={handleExpenseClick}
+                                compact
+                                listHeight={420}
+                            />
                         )}
                     </div>
+
                     <BudgetOverviewCard totalSpent={200} remainingAmount={70} />
                 </div>
-
             </div>
         </MainLayout>
     );
