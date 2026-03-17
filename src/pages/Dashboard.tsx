@@ -14,9 +14,10 @@ import { useUsers } from '../hooks/useUsers';
 import { useSettledExpenses } from '../hooks/useSettledExpense';
 import { ErrorDisplay } from '../components/UI/ErrorDisplay';
 import { Loader } from '../components/UI/Loader';
+import { Message } from '../components/UI/Message';
 export function Dashboard() {
-    const { data: expenses, isLoading, error } = useExpenses();
-    const { data: settledExpenses, isLoading: settledExpensesLoading, error: settledExpensesError } = useSettledExpenses();
+    const { data: expenses, isLoading: isExpenseLoading } = useExpenses();
+    const { data: settledExpenses, isLoading: settledExpensesLoading } = useSettledExpenses();
     const navigate = useNavigate();
     const { data: users } = useUsers();
 
@@ -28,12 +29,20 @@ export function Dashboard() {
         navigate(`/expenses/settle/view/${id}`);
     }, [navigate]);
 
-
-    if (isLoading || settledExpensesLoading) {
-        return <Loader size='lg' text='Loading...' />
-    }
-    else if (error || settledExpensesError) {
-        return <ErrorDisplay message="Failed to load expense details." />
+    const renderError = () => {
+        if (isExpenseLoading || settledExpensesLoading) {
+            return <Loader size='lg' text='Loading Expenses...' />;
+        }
+        if (expenses?.length === 0) {
+            return <Message message="No expenses found." />;
+        }
+        if (settledExpenses?.length === 0) {
+            if (expenses?.find(expense => expense.isSettled))
+                return <ErrorDisplay message="No settled expenses found." />;
+            else
+                return null;
+        }
+        return null;
     }
 
 
@@ -89,11 +98,7 @@ export function Dashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Recent Transactions */}
                     <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6 glass-morphism rounded-2xl p-6 transition-all hover:shadow-2xl">
-                        {isLoading || settledExpensesLoading ? (
-                            <Loader size='lg' text='Loading Expenses...' />
-                        ) : error || settledExpensesError ? (
-                            <ErrorDisplay message="Failed to load expense details." />
-                        ) : (
+                        {renderError() || (
                             <div>
                                 <div className="flex items-center justify-between mb-6">
                                     <h3 className="text-lg font-bold text-slate-900">Recent Expenses</h3>

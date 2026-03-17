@@ -29,7 +29,7 @@ export const GroupCard = ({
             await deleteGroup.mutateAsync(group.id);
             navigate('/groups');
         } catch (err: any) {
-            setFormErrors(err?.error as [], err?.errorType);
+            setFormErrors(err);
             console.error('Failed to delete group:', err);
         }
     };

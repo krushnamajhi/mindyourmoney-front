@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { APIError } from '../lib/ErrorTypes';
 
 const TOKEN_KEY = 'auth_token';
 
@@ -37,13 +38,13 @@ apiClient.interceptors.response.use(
         //Form Field Errors
         if ([422, 423].includes(error.response?.status)) {
             console.log("Validation errors: ", error.response.data);
-            return Promise.reject({ error: error.response.data.errors, errorType: error.response.data.error });
+            const errors: APIError = error.response.data
+            return Promise.reject(errors);
         }
         else {
             // Handle other global errors
-            const message = error.response?.data?.message || error.message || 'An error occurred';
-            console.error('API Error:', message);
-            return Promise.reject({ error: error.response.data.errors, errorType: error.response.data.error });
+            const errors: APIError = error.response.data
+            return Promise.reject(errors);
         }
 
     }

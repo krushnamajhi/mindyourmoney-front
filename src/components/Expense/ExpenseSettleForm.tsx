@@ -113,7 +113,7 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
             onSuccess?.();
             navigate('/expenses');
         } catch (error: any) {
-            setFormErrors(error?.error as [], error?.errorType);
+            setFormErrors(error);
         }
     };
 

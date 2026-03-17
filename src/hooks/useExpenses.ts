@@ -1,15 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CreateExpenseDto, Expense, ExpenseFilters } from '../domain/models';
 import { ExpenseService } from '../services/ExpenseService';
+import { retryService } from '../utils/common';
 
 export function useExpenses() {
     return useQuery({
         queryKey: ['expenses'],
         queryFn: async () => {
             const res = await ExpenseService.getExpenses()
-            console.log(res);
             return res;
         },
+        retry: retryService,
     });
 }
 
@@ -25,10 +26,10 @@ export function useExpensesByGroupId(groupId: string) {
         queryKey: ['expenses', groupId],
         queryFn: async () => {
             const res = await ExpenseService.getExpensesByGroupId(groupId)
-            console.log(res);
             return res;
         },
         enabled: !!groupId,
+        retry: retryService,
     });
 }
 
@@ -80,6 +81,7 @@ export function useExpense(id: string) {
         queryKey: ['expenses', 'basic_details', id],
         queryFn: () => ExpenseService.getExpenseById(id),
         enabled: !!id,
+        retry: retryService,
     });
 }
 
@@ -88,6 +90,7 @@ export function useExpenseDetails(id: string) {
         queryKey: ['expenses', 'full_details', id],
         queryFn: () => ExpenseService.getExpenseDetailsById(id),
         enabled: !!id,
+        retry: retryService,
     });
 }
 
@@ -114,5 +117,6 @@ export function useDeleteExpense() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['expenses'] });
         },
+        retry: retryService,
     });
 }
