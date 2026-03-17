@@ -11,7 +11,7 @@ import { Loader } from '../components/UI/Loader';
 import { Message } from '../components/UI/Message';
 import { ExpenseRowsByDate } from '../components/Expense/ExpenseRowsByDate';
 import { useFilterExpenseRows } from '../hooks/useExpenses';
-import { Filter_ALL, type ExpenseRow, type ExpenseRowYearWise, type ExpenseRowMonthWise, type ExpenseRowDayWise } from '../domain/models';
+import { Filter_ALL, type ExpenseRow, type ExpenseRowYearMonthWise, type ExpenseRowDayWise } from '../domain/models';
 
 export function Dashboard() {
     const navigate = useNavigate();
@@ -20,7 +20,7 @@ export function Dashboard() {
         groupId: Filter_ALL,
         expenseCategoryId: Filter_ALL,
         isShared: Filter_ALL,
-        limit: 5,
+        limit: 6,
     });
 
     const handleExpenseClick = useCallback((expense: ExpenseRow) => {
@@ -31,18 +31,15 @@ export function Dashboard() {
         navigate(`/expenses/view/${expense.id}`);
     }, [navigate]);
 
-    const recentExpenseRowsLimited = useMemo<ExpenseRowYearWise[]>(() => {
+    const recentExpenseRowsLimited = useMemo<ExpenseRowYearMonthWise[]>(() => {
         if (!recentExpenseRows || recentExpenseRows.length === 0) return [];
 
         const limitedFlatRows: ExpenseRow[] = [];
-        for (const year of recentExpenseRows) {
-            for (const month of year.expensesPerYear) {
-                for (const day of month.expensesPerMonth) {
-                    for (const expense of day.expensesPerDay) {
-                        if (limitedFlatRows.length >= 10) break;
-                        limitedFlatRows.push(expense);
-                    }
+        for (const month of recentExpenseRows) {
+            for (const day of month.expensesPerMonth) {
+                for (const expense of day.expensesPerDay) {
                     if (limitedFlatRows.length >= 10) break;
+                    limitedFlatRows.push(expense);
                 }
                 if (limitedFlatRows.length >= 10) break;
             }
@@ -81,23 +78,20 @@ export function Dashboard() {
 
         return Array.from(groupedByYear.entries())
             .sort(([a], [b]) => b - a)
-            .map(([year, months]) => {
-                const expensesPerYear: ExpenseRowMonthWise[] = Array.from(months.entries())
+            .flatMap(([year, months]) =>
+                Array.from(months.entries())
                     .sort(([a], [b]) => b - a)
                     .map(([monthIndex, days]) => {
                         const expensesPerMonth: ExpenseRowDayWise[] = Array.from(days.entries())
                             .sort(([a], [b]) => b - a)
                             .map(([day, expensesPerDay]) => ({ day, expensesPerDay }));
                         return {
+                            year,
                             month: monthNames[monthIndex] ?? 'Unknown',
                             expensesPerMonth,
                         };
-                    });
-                return {
-                    year,
-                    expensesPerYear,
-                };
-            });
+                    })
+            );
     }, [recentExpenseRows]);
 
     return (
@@ -117,27 +111,27 @@ export function Dashboard() {
                     </Button>
                 </HeaderLayout>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FinancialCard title="Total Balance" amount={48250} description="Updated 5 mins ago" percentage={2.4}
                         icon={
-                            <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-4">
-                                <TrendingUp size={24} />
+                            <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 mb-3">
+                                <TrendingUp size={20} />
                             </div>
                         }
                     />
 
                     <FinancialCard title="Monthly Income" amount={7400} description="Updated 5 mins ago" percentage={12}
                         icon={
-                            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-4">
-                                <TrendingUp size={24} />
+                            <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600 mb-3">
+                                <TrendingUp size={20} />
                             </div>
                         }
                     />
 
                     <FinancialCard title="Monthly Expenses" amount={3120.45} description="Updated 5 mins ago" percentage={-5}
                         icon={
-                            <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 mb-4">
-                                <TrendingDown size={24} />
+                            <div className="w-10 h-10 bg-rose-50 rounded-lg flex items-center justify-center text-rose-600 mb-3">
+                                <TrendingDown size={20} />
                             </div>
                         }
                     />
@@ -159,7 +153,7 @@ export function Dashboard() {
                                 rows={recentExpenseRowsLimited}
                                 onExpenseClick={handleExpenseClick}
                                 compact
-                                listHeight={420}
+                                listHeight={520}
                             />
                         )}
                     </div>

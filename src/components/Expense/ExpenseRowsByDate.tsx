@@ -1,13 +1,13 @@
 import { memo, useCallback, useMemo, useRef } from 'react';
 import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import type { ExpenseRow, ExpenseRowYearWise } from '../../domain/models';
+import type { ExpenseRow, ExpenseRowYearMonthWise } from '../../domain/models';
 import { useSettings } from '../../context/SettingsContext';
 import { useAuth } from '../../context/AuthContext';
 import { useExpenseRowsCollapse } from '../../hooks/UI/useExpenseRowsCollapse';
 
 interface ExpenseRowsByDateProps {
-    rows: ExpenseRowYearWise[];
+    rows: ExpenseRowYearMonthWise[];
     onExpenseClick: (expense: ExpenseRow) => void;
     hideGroupTag?: boolean;
     compact?: boolean;
@@ -15,14 +15,6 @@ interface ExpenseRowsByDateProps {
 }
 
 type VisibleRow =
-    | {
-        kind: 'year';
-        key: string;
-        year: number;
-        label: string;
-        count: string;
-        collapsed: boolean;
-    }
     | {
         kind: 'month';
         key: string;
@@ -50,75 +42,56 @@ type VisibleRow =
 
 const LIST_HEIGHT = 620;
 const ROW_SIZE = {
-    year: 52,
     month: 44,
     day: 40,
     expense: 70,
 } as const;
 
-const countMonthItems = (month: ExpenseRowYearWise['expensesPerYear'][number]): number =>
+const countMonthItems = (month: ExpenseRowYearMonthWise): number =>
     month.expensesPerMonth.reduce((sum, day) => sum + day.expensesPerDay.length, 0);
 
-const countYearItems = (year: ExpenseRowYearWise): number =>
-    year.expensesPerYear.reduce((sum, month) => sum + countMonthItems(month), 0);
-
 function buildVisibleRows(
-    rows: ExpenseRowYearWise[],
-    isYearCollapsed: (year: number) => boolean,
+    rows: ExpenseRowYearMonthWise[],
     isMonthCollapsed: (year: number, month: string) => boolean,
     isDayCollapsed: (year: number, month: string, day: number) => boolean,
 ): VisibleRow[] {
     const flattened: VisibleRow[] = [];
 
-    for (const yearNode of rows) {
-        const yearCollapsed = isYearCollapsed(yearNode.year);
+    for (const monthNode of rows) {
+        const monthCollapsed = isMonthCollapsed(monthNode.year, monthNode.month);
         flattened.push({
-            kind: 'year',
-            key: `y-${yearNode.year}`,
-            year: yearNode.year,
-            label: `${yearNode.year}`,
-            count: `${countYearItems(yearNode)} items`,
-            collapsed: yearCollapsed,
+            kind: 'month',
+            key: `m-${monthNode.year}-${monthNode.month}`,
+            year: monthNode.year,
+            month: monthNode.month,
+            label: `${monthNode.month} ${monthNode.year}`,
+            count: `${countMonthItems(monthNode)} items`,
+            collapsed: monthCollapsed,
         });
 
-        if (yearCollapsed) continue;
+        if (monthCollapsed) continue;
 
-        for (const monthNode of yearNode.expensesPerYear) {
-            const monthCollapsed = isMonthCollapsed(yearNode.year, monthNode.month);
+        for (const dayNode of monthNode.expensesPerMonth) {
+            const dayCollapsed = isDayCollapsed(monthNode.year, monthNode.month, dayNode.day);
             flattened.push({
-                kind: 'month',
-                key: `m-${yearNode.year}-${monthNode.month}`,
-                year: yearNode.year,
+                kind: 'day',
+                key: `d-${monthNode.year}-${monthNode.month}-${dayNode.day}`,
+                year: monthNode.year,
                 month: monthNode.month,
-                label: monthNode.month,
-                count: `${countMonthItems(monthNode)} items`,
-                collapsed: monthCollapsed,
+                day: dayNode.day,
+                label: `Day ${dayNode.day}`,
+                count: `${dayNode.expensesPerDay.length} items`,
+                collapsed: dayCollapsed,
             });
 
-            if (monthCollapsed) continue;
+            if (dayCollapsed) continue;
 
-            for (const dayNode of monthNode.expensesPerMonth) {
-                const dayCollapsed = isDayCollapsed(yearNode.year, monthNode.month, dayNode.day);
+            for (const expense of dayNode.expensesPerDay) {
                 flattened.push({
-                    kind: 'day',
-                    key: `d-${yearNode.year}-${monthNode.month}-${dayNode.day}`,
-                    year: yearNode.year,
-                    month: monthNode.month,
-                    day: dayNode.day,
-                    label: `Day ${dayNode.day}`,
-                    count: `${dayNode.expensesPerDay.length} items`,
-                    collapsed: dayCollapsed,
+                    kind: 'expense',
+                    key: `e-${expense.id}`,
+                    expense,
                 });
-
-                if (dayCollapsed) continue;
-
-                for (const expense of dayNode.expensesPerDay) {
-                    flattened.push({
-                        kind: 'expense',
-                        key: `e-${expense.id}`,
-                        expense,
-                    });
-                }
             }
         }
     }
@@ -128,7 +101,6 @@ function buildVisibleRows(
 
 const estimateRowSize = (row: VisibleRow): number => {
     if (row.kind === 'expense') return ROW_SIZE.expense;
-    if (row.kind === 'year') return ROW_SIZE.year;
     if (row.kind === 'month') return ROW_SIZE.month;
     return ROW_SIZE.day;
 };
@@ -147,10 +119,8 @@ export function ExpenseRowsByDate({
     const { user: loggedInUser } = useAuth();
     const loggedInUserId = loggedInUser?.id ? String(loggedInUser.id) : '';
     const {
-        toggleYear,
         toggleMonth,
         toggleDay,
-        isYearCollapsed,
         isMonthCollapsed,
         isDayCollapsed,
         collapseAll,
@@ -158,8 +128,8 @@ export function ExpenseRowsByDate({
     } = useExpenseRowsCollapse(rows);
 
     const visibleRows = useMemo(
-        () => buildVisibleRows(rows, isYearCollapsed, isMonthCollapsed, isDayCollapsed),
-        [rows, isYearCollapsed, isMonthCollapsed, isDayCollapsed],
+        () => buildVisibleRows(rows, isMonthCollapsed, isDayCollapsed),
+        [rows, isMonthCollapsed, isDayCollapsed],
     );
 
     const rowVirtualizer = useVirtualizer({
@@ -175,10 +145,6 @@ export function ExpenseRowsByDate({
     });
 
     const handleToggle = useCallback((row: VisibleRow) => {
-        if (row.kind === 'year') {
-            toggleYear(row.year);
-            return;
-        }
         if (row.kind === 'month') {
             toggleMonth(row.year, row.month);
             return;
@@ -186,7 +152,7 @@ export function ExpenseRowsByDate({
         if (row.kind === 'day') {
             toggleDay(row.year, row.month, row.day);
         }
-    }, [toggleYear, toggleMonth, toggleDay]);
+    }, [toggleMonth, toggleDay]);
 
     const renderRow = useCallback((virtualRow: VirtualItem) => {
         const row = visibleRows[virtualRow.index];
@@ -287,23 +253,13 @@ const VirtualizedRow = memo(function VirtualizedRow({
                 transform: `translateY(${virtualRow.start}px)`,
             }}
         >
-            {row.kind === 'year' && (
-                <HeaderRow
-                    collapsed={row.collapsed}
-                    label={row.label}
-                    count={row.count}
-                    onToggle={() => onToggle(row)}
-                    className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-slate-900"
-                />
-            )}
-
             {row.kind === 'month' && (
                 <HeaderRow
                     collapsed={row.collapsed}
                     label={row.label}
                     count={row.count}
                     onToggle={() => onToggle(row)}
-                    className="border-b border-sky-100 bg-sky-50 pl-4 pr-3 py-1.5 text-sky-900"
+                    className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-slate-900"
                 />
             )}
 

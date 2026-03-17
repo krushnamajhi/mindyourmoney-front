@@ -1,5 +1,5 @@
 import apiClient from '../api/axiosClient';
-import type { CreateExpenseDto, Expense, ExpenseFilters, ExpenseRowYearWise, SettleExpenseDto } from '../domain/models';
+import type { CreateExpenseDto, Expense, ExpenseFilters, ExpenseRowYearMonthWise, SettleExpenseDto } from '../domain/models';
 
 export class ExpenseService {
 
@@ -26,7 +26,7 @@ export class ExpenseService {
         return response.data.data.expenses;
     }
 
-    static async filterExpenseRows(filters: ExpenseFilters): Promise<ExpenseRowYearWise[]> {
+    static async filterExpenseRows(filters: ExpenseFilters): Promise<ExpenseRowYearMonthWise[]> {
         const response = await apiClient.post(this.URL + '/filter', filters);
         return response.data.data.expenses;
     }

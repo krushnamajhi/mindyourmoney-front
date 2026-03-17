@@ -18,7 +18,6 @@ export function useExpenseFilter(onFilter: (filters: ExpenseFilters) => void) {
             alert("Start date cannot be after end date");
             return;
         }
-
         onFilter({
             startDate: startDate,
             endDate: endDate,

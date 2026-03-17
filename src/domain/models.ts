@@ -220,7 +220,7 @@ export const SettleExpenseDtoSchema = z.object({
 export type SettleExpenseDto = z.infer<typeof SettleExpenseDtoSchema>;
 
 // ============================================
-// Expense Row Grouped Response (Year -> Month -> Day)
+// Expense Row Grouped Response ((Year + Month) -> Day)
 // ============================================
 export interface ExpenseRow {
     id: number;
@@ -254,12 +254,8 @@ export interface ExpenseRowDayWise {
     expensesPerDay: ExpenseRow[];
 }
 
-export interface ExpenseRowMonthWise {
+export interface ExpenseRowYearMonthWise {
+    year: number;
     month: string;
     expensesPerMonth: ExpenseRowDayWise[];
-}
-
-export interface ExpenseRowYearWise {
-    year: number;
-    expensesPerYear: ExpenseRowMonthWise[];
 }
