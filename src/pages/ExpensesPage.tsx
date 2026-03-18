@@ -1,24 +1,18 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Plus, Download, ArrowUpDown, Wallet } from 'lucide-react';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { MainLayout } from '../components/Layout/MainLayout';
-import { useFilterExpenses } from '../hooks/useExpenses';
+import { useFilterExpenseRows } from '../hooks/useExpenses';
 import { useSettings } from '../context/SettingsContext';
 import { HeaderLayout } from '../components/Layout/HeaderLayout';
-import { ExpenseRow } from '../components/Expense/ExpenseRow';
 import { Button } from '../components/UI/Button';
 import { ExpenseFilter } from '../components/Expense/ExpenseFilter';
-import { Filter_ALL, type ExpenseFilters } from '../domain/models';
+import { Filter_ALL, type ExpenseFilters, type ExpenseRow } from '../domain/models';
 import { useNavigate } from 'react-router-dom';
-import { ExpenseRowSettled } from '../components/Expense/ExpenseRowSettled';
-import { useUsers } from '../hooks/useUsers';
-import { useSettledExpenses } from '../hooks/useSettledExpense';
+import { ExpenseRowsByDate } from '../components/Expense/ExpenseRowsByDate';
 
 export function ExpensesPage() {
     const { formatCurrency } = useSettings();
     const navigate = useNavigate();
-    const { data: users } = useUsers();
-    const { data: settledExpenses } = useSettledExpenses();
 
     // Filter States
     const [activeFilters, setActiveFilters] = useState<ExpenseFilters>({
@@ -30,30 +24,19 @@ export function ExpensesPage() {
         endDate: undefined
     });
 
-    const { data: expenses, isLoading } = useFilterExpenses(activeFilters as any);
+    const { data: expenseRowsByYear, isLoading } = useFilterExpenseRows(activeFilters as any);
 
     const handleFilter = (filters: ExpenseFilters) => {
         setActiveFilters(filters);
     };
 
-    const handleRowClick = useCallback((id: string) => {
-        navigate(`/expenses/view/${id}`);
+    const handleRowClick = useCallback((expense: ExpenseRow) => {
+        if (expense.isSettled) {
+            navigate(`/expenses/settle/view/${expense.id}`);
+            return;
+        }
+        navigate(`/expenses/view/${expense.id}`);
     }, [navigate]);
-
-    const handleRowClickSettled = useCallback((id: string) => {
-        navigate(`/expenses/settle/view/${id}`);
-    }, [navigate]);
-
-
-    // Virtualization setup
-    const parentRef = useRef<HTMLDivElement>(null);
-
-    const rowVirtualizer = useVirtualizer({
-        count: expenses?.length || 0,
-        getScrollElement: () => parentRef.current,
-        estimateSize: () => 72,
-        overscan: 10,
-    });
 
     return (
         <MainLayout>
@@ -77,57 +60,8 @@ export function ExpensesPage() {
                         <div className="px-6 py-12 text-center text-slate-500">
                             Loading transactions...
                         </div>
-                    ) : !expenses || expenses.length === 0 ? (
-                        <div className="px-6 py-12 text-center text-slate-500">
-                            No transactions found.
-                        </div>
                     ) : (
-                        <div
-                            ref={parentRef}
-                            className="overflow-auto"
-                            style={{ height: '600px' }} // Fallback to fixed height for stability
-                        >
-                            <div
-                                style={{
-                                    height: `${rowVirtualizer.getTotalSize()}px`,
-                                    width: '100%',
-                                    position: 'relative',
-                                }}
-                            >
-                                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                                    const expense = expenses[virtualRow.index];
-                                    if (!expense) return null;
-
-                                    return (
-                                        <div
-                                            key={expense.id}
-                                            data-index={virtualRow.index}
-                                            ref={rowVirtualizer.measureElement}
-                                            style={{
-                                                position: 'absolute',
-                                                top: 0,
-                                                left: 0,
-                                                width: '100%',
-                                                transform: `translateY(${virtualRow.start}px)`,
-                                            }}
-                                        >
-                                            <div className="border-b border-slate-100 last:border-0 p-1">
-                                                {expense.isSettled ? (
-                                                    <ExpenseRowSettled 
-                                                        onClick={handleRowClickSettled} 
-                                                        expense={expense} 
-                                                        settledExpense={settledExpenses?.find(se => String(se.expenseId) === String(expense.id)) as any} 
-                                                        users={users} 
-                                                    />
-                                                ) : (
-                                                    <ExpenseRow onClick={handleRowClick} expense={expense} />
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                        <ExpenseRowsByDate rows={expenseRowsByYear || []} onExpenseClick={handleRowClick} />
                     )}
                 </div>
 
@@ -169,4 +103,3 @@ function StatCard({ label, value, icon }: { label: string, value: string, icon: 
         </div>
     )
 }
-

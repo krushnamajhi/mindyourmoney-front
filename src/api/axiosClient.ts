@@ -4,7 +4,7 @@ import type { APIError } from '../lib/ErrorTypes';
 const TOKEN_KEY = 'auth_token';
 
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://192.168.1.15:3000/', // Default or env
+    baseURL: import.meta.env.VITE_API_URL || 'http://192.168.1.12:3000/', // Default or env
     headers: {
         'Content-Type': 'application/json',
     },

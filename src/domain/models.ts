@@ -201,6 +201,7 @@ export const ExpenseFilterSchema = z.object({
     expenseCategoryId: z.array(z.coerce.number().int().or(z.enum([Filter_NONE]))).or(z.enum([Filter_ALL])).optional(),
     startDate: z.string().optional(),
     endDate: z.string().optional(),
+    limit: z.coerce.number().int().positive().optional(),
 })
 
 export type ExpenseFilters = z.infer<typeof ExpenseFilterSchema>;
@@ -217,3 +218,44 @@ export const SettleExpenseDtoSchema = z.object({
 });
 
 export type SettleExpenseDto = z.infer<typeof SettleExpenseDtoSchema>;
+
+// ============================================
+// Expense Row Grouped Response ((Year + Month) -> Day)
+// ============================================
+export interface ExpenseRow {
+    id: number;
+    expenseDate: string | Date;
+    title: string;
+    description?: string;
+    amount: number;
+    paidByUser: {
+        id: number;
+        fullName: string;
+    };
+    paidToUser?: {
+        id: number;
+        fullName: string;
+    };
+    group?: {
+        id: number;
+        name: string;
+    };
+    expenseCategory?: {
+        id: number;
+        name: string;
+    };
+    isShared?: boolean;
+    isSettled?: boolean;
+    balance: number;
+}
+
+export interface ExpenseRowDayWise {
+    day: number;
+    expensesPerDay: ExpenseRow[];
+}
+
+export interface ExpenseRowYearMonthWise {
+    year: number;
+    month: string;
+    expensesPerMonth: ExpenseRowDayWise[];
+}

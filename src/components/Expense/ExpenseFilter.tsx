@@ -19,12 +19,15 @@ export function ExpenseFilter({ onFilter }: ExpenseFilterProps) {
         searchQuery, setSearchQuery,
         selectedGroup, setSelectedGroup,
         expenseCategoryId, setExpenseCategoryId,
-        isShared, setIsShared,
+        expenseTypes, setExpenseTypes,
+        sharedTypeValue, personalTypeValue,
         startDate, setStartDate,
         endDate, setEndDate,
         handleSubmit,
         nonGroup
     } = useExpenseFilter(onFilter);
+
+    const hasSharedSelected = expenseTypes.includes(sharedTypeValue);
 
     const { data: categories } = useExpenseCategories();
     const { data: groups } = useGroups();
@@ -91,19 +94,22 @@ export function ExpenseFilter({ onFilter }: ExpenseFilterProps) {
                         title="End Date"
                     />
 
-                    <div className="flex items-center space-x-2 px-3 py-2 bg-white/40 border border-white/20 rounded-lg text-sm text-slate-600 transition-colors backdrop-blur-sm shadow-sm h-[42px]">
-                        <input
-                            type="checkbox"
-                            id="isShared"
-                            checked={isShared}
-                            onChange={(e) => {
-                                setIsShared(e.target.checked);
+                    <MultiselectFilter
+                        icon={<FilterIcon size={16} />}
+                        options={[
+                            { label: 'Shared', value: sharedTypeValue },
+                            { label: 'Personal', value: personalTypeValue },
+                        ]}
+                        selectedValues={expenseTypes}
+                        onChange={(values) => {
+                            setExpenseTypes(values);
+                            const hasShared = values.includes(sharedTypeValue);
+                            if (!hasShared) {
                                 setSelectedGroup(Filter_ALL);
-                            }}
-                            className="w-4 h-4 text-primary-600 border-white/20 rounded focus:ring-primary-500 bg-white/40"
-                        />
-                        <label htmlFor="isShared" className="cursor-pointer font-medium select-none">Shared</label>
-                    </div>
+                            }
+                        }}
+                        placeholder="Type"
+                    />
 
                     <MultiselectFilter
                         icon={<Group size={16} />}
@@ -113,7 +119,7 @@ export function ExpenseFilter({ onFilter }: ExpenseFilterProps) {
                         ]}
                         selectedValues={selectedGroup === Filter_ALL ? [] : selectedGroup.map(v => v.toString())}
                         onChange={(values) => setSelectedGroup(values.length === 0 ? Filter_ALL : values.map(v => v === Filter_NONE ? Filter_NONE : Number(v)))}
-                        disabled={!isShared}
+                        disabled={!hasSharedSelected}
                         placeholder="Groups"
                     />
 
