@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { APIError } from "../../lib/ErrorTypes";
 
 export function useFormErrorsUI() {
     const [validationErrors, setValidationErrors] = useState<{ path?: string; message?: string }[]>([]);
+    const errorContainerRef = useRef<HTMLDivElement | null>(null);
 
     const addError = (path: string, message: string) => {
         setValidationErrors((prev) => [...prev, { path, message }]);
@@ -33,6 +34,12 @@ export function useFormErrorsUI() {
     useEffect(() => {
         if (hasErrors()) {
             console.log("Current Form Errors:", validationErrors);
+            requestAnimationFrame(() => {
+                errorContainerRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+            });
         }
     }, [validationErrors]);
 
@@ -44,7 +51,10 @@ export function useFormErrorsUI() {
         if (!hasErrors()) return null;
 
         return (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-2xl animate-in fade-in slide-in-from-top-2 mb-6">
+            <div
+                ref={errorContainerRef}
+                className="p-4 bg-red-50 border border-red-200 rounded-2xl animate-in fade-in slide-in-from-top-2 mb-6"
+            >
                 <p className="text-red-800 text-sm font-bold flex items-center mb-2">
                     <span className="mr-2">⚠️</span> Please fix the following error(s)
                 </p>

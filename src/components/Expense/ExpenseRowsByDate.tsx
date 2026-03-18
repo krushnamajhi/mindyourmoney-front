@@ -1,10 +1,8 @@
 import { memo, useCallback, useMemo, useRef } from 'react';
 import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
-import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { ExpenseRow, ExpenseRowYearMonthWise } from '../../domain/models';
 import { useSettings } from '../../context/SettingsContext';
 import { useAuth } from '../../context/AuthContext';
-import { useExpenseRowsCollapse } from '../../hooks/UI/useExpenseRowsCollapse';
 
 interface ExpenseRowsByDateProps {
     rows: ExpenseRowYearMonthWise[];
@@ -22,17 +20,6 @@ type VisibleRow =
         month: string;
         label: string;
         count: string;
-        collapsed: boolean;
-    }
-    | {
-        kind: 'day';
-        key: string;
-        year: number;
-        month: string;
-        day: number;
-        label: string;
-        count: string;
-        collapsed: boolean;
     }
     | {
         kind: 'expense';
@@ -42,23 +29,17 @@ type VisibleRow =
 
 const LIST_HEIGHT = 620;
 const ROW_SIZE = {
-    month: 44,
-    day: 40,
-    expense: 70,
+    month: 34,
+    expense: 78,
 } as const;
 
 const countMonthItems = (month: ExpenseRowYearMonthWise): number =>
     month.expensesPerMonth.reduce((sum, day) => sum + day.expensesPerDay.length, 0);
 
-function buildVisibleRows(
-    rows: ExpenseRowYearMonthWise[],
-    isMonthCollapsed: (year: number, month: string) => boolean,
-    isDayCollapsed: (year: number, month: string, day: number) => boolean,
-): VisibleRow[] {
+function buildVisibleRows(rows: ExpenseRowYearMonthWise[]): VisibleRow[] {
     const flattened: VisibleRow[] = [];
 
     for (const monthNode of rows) {
-        const monthCollapsed = isMonthCollapsed(monthNode.year, monthNode.month);
         flattened.push({
             kind: 'month',
             key: `m-${monthNode.year}-${monthNode.month}`,
@@ -66,26 +47,9 @@ function buildVisibleRows(
             month: monthNode.month,
             label: `${monthNode.month} ${monthNode.year}`,
             count: `${countMonthItems(monthNode)} items`,
-            collapsed: monthCollapsed,
         });
 
-        if (monthCollapsed) continue;
-
         for (const dayNode of monthNode.expensesPerMonth) {
-            const dayCollapsed = isDayCollapsed(monthNode.year, monthNode.month, dayNode.day);
-            flattened.push({
-                kind: 'day',
-                key: `d-${monthNode.year}-${monthNode.month}-${dayNode.day}`,
-                year: monthNode.year,
-                month: monthNode.month,
-                day: dayNode.day,
-                label: `Day ${dayNode.day}`,
-                count: `${dayNode.expensesPerDay.length} items`,
-                collapsed: dayCollapsed,
-            });
-
-            if (dayCollapsed) continue;
-
             for (const expense of dayNode.expensesPerDay) {
                 flattened.push({
                     kind: 'expense',
@@ -101,8 +65,7 @@ function buildVisibleRows(
 
 const estimateRowSize = (row: VisibleRow): number => {
     if (row.kind === 'expense') return ROW_SIZE.expense;
-    if (row.kind === 'month') return ROW_SIZE.month;
-    return ROW_SIZE.day;
+    return ROW_SIZE.month;
 };
 
 type FormatCurrency = (amount: number) => string;
@@ -118,19 +81,8 @@ export function ExpenseRowsByDate({
     const { formatCurrency } = useSettings();
     const { user: loggedInUser } = useAuth();
     const loggedInUserId = loggedInUser?.id ? String(loggedInUser.id) : '';
-    const {
-        toggleMonth,
-        toggleDay,
-        isMonthCollapsed,
-        isDayCollapsed,
-        collapseAll,
-        expandAll,
-    } = useExpenseRowsCollapse(rows);
 
-    const visibleRows = useMemo(
-        () => buildVisibleRows(rows, isMonthCollapsed, isDayCollapsed),
-        [rows, isMonthCollapsed, isDayCollapsed],
-    );
+    const visibleRows = useMemo(() => buildVisibleRows(rows), [rows]);
 
     const rowVirtualizer = useVirtualizer({
         count: visibleRows.length,
@@ -144,16 +96,6 @@ export function ExpenseRowsByDate({
         overscan: 10,
     });
 
-    const handleToggle = useCallback((row: VisibleRow) => {
-        if (row.kind === 'month') {
-            toggleMonth(row.year, row.month);
-            return;
-        }
-        if (row.kind === 'day') {
-            toggleDay(row.year, row.month, row.day);
-        }
-    }, [toggleMonth, toggleDay]);
-
     const renderRow = useCallback((virtualRow: VirtualItem) => {
         const row = visibleRows[virtualRow.index];
         if (!row) return null;
@@ -162,7 +104,6 @@ export function ExpenseRowsByDate({
             <VirtualizedRow
                 row={row}
                 virtualRow={virtualRow}
-                onToggle={handleToggle}
                 onExpenseClick={onExpenseClick}
                 measureElement={rowVirtualizer.measureElement}
                 formatCurrency={formatCurrency}
@@ -171,7 +112,7 @@ export function ExpenseRowsByDate({
                 compact={compact}
             />
         );
-    }, [visibleRows, rowVirtualizer, handleToggle, onExpenseClick, formatCurrency, loggedInUserId, hideGroupTag]);
+    }, [visibleRows, rowVirtualizer, onExpenseClick, formatCurrency, loggedInUserId, hideGroupTag, compact]);
 
     if (rows.length === 0) {
         return (
@@ -182,27 +123,10 @@ export function ExpenseRowsByDate({
     }
 
     return (
-        <div className={compact ? 'space-y-1 p-0' : 'space-y-3 p-3'}>
-            <div className={compact ? 'flex items-center justify-end gap-2 pb-0 px-0' : 'flex items-center justify-end gap-2 pb-0'}>
-                <button
-                    type="button"
-                    onClick={expandAll}
-                    className="text-xs font-semibold text-primary-700 hover:text-primary-800"
-                >
-                    Expand All
-                </button>
-                <button
-                    type="button"
-                    onClick={collapseAll}
-                    className="text-xs font-semibold text-slate-600 hover:text-slate-800"
-                >
-                    Collapse All
-                </button>
-            </div>
-
+        <div className={compact ? 'space-y-1 p-0' : 'space-y-1 p-1'}>
             <div
                 ref={parentRef}
-                className="overflow-auto rounded-xl border border-slate-200 bg-white"
+                className="overflow-auto bg-white"
                 style={{ height: `${listHeight}px` }}
             >
                 <div
@@ -222,7 +146,6 @@ export function ExpenseRowsByDate({
 const VirtualizedRow = memo(function VirtualizedRow({
     row,
     virtualRow,
-    onToggle,
     onExpenseClick,
     measureElement,
     formatCurrency,
@@ -232,7 +155,6 @@ const VirtualizedRow = memo(function VirtualizedRow({
 }: {
     row: VisibleRow;
     virtualRow: VirtualItem;
-    onToggle: (row: VisibleRow) => void;
     onExpenseClick: (expense: ExpenseRow) => void;
     measureElement: (element: HTMLDivElement | null) => void;
     formatCurrency: FormatCurrency;
@@ -255,26 +177,14 @@ const VirtualizedRow = memo(function VirtualizedRow({
         >
             {row.kind === 'month' && (
                 <HeaderRow
-                    collapsed={row.collapsed}
                     label={row.label}
                     count={row.count}
-                    onToggle={() => onToggle(row)}
-                    className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-slate-900"
-                />
-            )}
-
-            {row.kind === 'day' && (
-                <HeaderRow
-                    collapsed={row.collapsed}
-                    label={row.label}
-                    count={row.count}
-                    onToggle={() => onToggle(row)}
-                    className="border-b border-emerald-100 bg-emerald-50 pl-6 pr-3 py-1.5 text-emerald-900"
+                    className="border-b border-slate-200 bg-slate-50 px-2 py-1 text-slate-800"
                 />
             )}
 
             {row.kind === 'expense' && (
-                <div className={compact ? 'border-b border-slate-100 pl-4 pr-1' : 'border-b border-slate-100 pl-8 pr-2'}>
+                <div className={compact ? 'border-b border-slate-100 px-1' : 'border-b border-slate-100 px-1.5'}>
                     <ExpenseItemRow
                         expense={row.expense}
                         onClick={onExpenseClick}
@@ -290,30 +200,19 @@ const VirtualizedRow = memo(function VirtualizedRow({
 });
 
 const HeaderRow = memo(function HeaderRow({
-    onToggle,
-    collapsed,
     label,
     count,
     className,
 }: {
-    onToggle: () => void;
-    collapsed: boolean;
     label: string;
     count: string;
     className?: string;
 }) {
     return (
-        <button
-            type="button"
-            onClick={onToggle}
-            className={`flex w-full items-center justify-between hover:bg-slate-50 ${className || ''}`}
-        >
-            <span className="flex items-center gap-1.5 text-xs font-semibold">
-                {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                {label}
-            </span>
+        <div className={`flex w-full items-center justify-between ${className || ''}`}>
+            <span className="text-[11px] font-semibold">{label}</span>
             <span className="text-[11px] text-slate-500">{count}</span>
-        </button>
+        </div>
     );
 });
 
@@ -358,55 +257,70 @@ const ExpenseItemRow = memo(function ExpenseItemRow({
         onClick(expense);
     }, [onClick, expense]);
 
+    const expenseDate = new Date(expense.expenseDate);
+    const hasValidDate = !Number.isNaN(expenseDate.getTime());
+    const monthLabel = hasValidDate
+        ? expenseDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
+        : '---';
+    const dayLabel = hasValidDate
+        ? expenseDate.toLocaleDateString('en-US', { day: '2-digit' })
+        : '--';
+
     return (
         <button
             type="button"
             onClick={handleClick}
-            className={compact ? 'flex w-full items-center justify-between px-3 py-1.5 text-left hover:bg-slate-50' : 'flex w-full items-center justify-between px-4 py-2 text-left hover:bg-slate-50'}
+            className={compact ? 'flex w-full items-center justify-between gap-3 px-2 py-2 text-left hover:bg-slate-50' : 'flex w-full items-center justify-between gap-3 px-2.5 py-2.5 text-left hover:bg-slate-50'}
         >
-            <div className="min-w-0">
-                {isSettledExpense ? (
-                    <p className={`text-[15px] font-medium ${settledTextClass}`}>{settledText}</p>
-                ) : !isPersonalExpense && (
-                    <>
-                        <p className="truncate text-base font-semibold text-slate-900">{expense.title}</p>
-                        <p className="text-sm text-slate-500">
-                            {paidByLabel} paid {formatCurrency(amount)}
-                        </p>
-                    </>
-                )}
-                {!isSettledExpense && isPersonalExpense && (
-                    <p className="truncate text-base font-semibold text-slate-900">{expense.title}</p>
-                )}
-                <div className={compact ? 'mt-0.5 flex flex-wrap items-center gap-1.5' : 'mt-1 flex flex-wrap items-center gap-1.5'}>
+            <div className="flex min-w-0 items-center gap-2.5">
+                <div className="w-10 shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-1 py-1 text-center">
+                    <p className="text-[10px] font-semibold uppercase leading-none text-slate-500">{monthLabel}</p>
+                    <p className="mt-0.5 text-sm font-bold leading-none text-slate-800">{dayLabel}</p>
+                </div>
+                <div className="min-w-0">
                     {isSettledExpense ? (
-                        <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
-                            {expense.group?.name || 'Non-group'}
-                        </span>
-                    ) : (
+                        <p className={`text-sm font-medium ${settledTextClass}`}>{settledText}</p>
+                    ) : !isPersonalExpense && (
                         <>
-                            {isPersonalExpense && (
-                                <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
-                                    Personal
-                                </span>
-                            )}
-                            {!hideGroupTag && expense.isShared && (
-                                <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
-                                    {expense.group?.name || 'Non-group'}
-                                </span>
-                            )}
-                            {expense.expenseCategory?.name && (
-                                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                                    {expense.expenseCategory.name}
-                                </span>
-                            )}
+                            <p className="truncate text-base font-semibold text-slate-900">{expense.title}</p>
+                            <p className="text-sm text-slate-500">
+                                {paidByLabel} paid {formatCurrency(amount)}
+                            </p>
                         </>
                     )}
+                    {!isSettledExpense && isPersonalExpense && (
+                        <p className="truncate text-base font-semibold text-slate-900">{expense.title}</p>
+                    )}
+                    <div className={compact ? 'mt-0.5 flex flex-wrap items-center gap-1.5' : 'mt-1 flex flex-wrap items-center gap-1.5'}>
+                        {isSettledExpense ? (
+                            <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+                                {expense.group?.name || 'Non-group'}
+                            </span>
+                        ) : (
+                            <>
+                                {isPersonalExpense && (
+                                    <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+                                        Personal
+                                    </span>
+                                )}
+                                {!hideGroupTag && expense.isShared && (
+                                    <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+                                        {expense.group?.name || 'Non-group'}
+                                    </span>
+                                )}
+                                {expense.expenseCategory?.name && (
+                                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                        {expense.expenseCategory.name}
+                                    </span>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {!isSettledExpense && (
-                <div className={compact ? 'ml-3 text-right' : 'ml-4 text-right'}>
+                <div className={compact ? 'ml-2 text-right' : 'ml-3 text-right'}>
                     {isPersonalExpense ? (
                         <p className="text-base font-semibold text-slate-900">{formatCurrency(amount)}</p>
                     ) : (
