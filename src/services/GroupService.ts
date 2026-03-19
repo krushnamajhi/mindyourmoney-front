@@ -1,5 +1,5 @@
 import apiClient from '../api/axiosClient';
-import type { Group, Groups } from '../domain/models';
+import type { Group, GroupMemberByGroup, Groups } from '../domain/models';
 
 export class GroupService {
     private static URL = "/expense-tracker/group"
@@ -10,6 +10,11 @@ export class GroupService {
 
     static async getGroupById(id: string): Promise<Group | undefined> {
         const response = await apiClient.get(this.URL + '/' + id);
+        return response.data;
+    }
+
+    static async getMembersByGroupId(groupId: string): Promise<GroupMemberByGroup[]> {
+        const response = await apiClient.get(this.URL + '/' + groupId + '/members');
         return response.data;
     }
 

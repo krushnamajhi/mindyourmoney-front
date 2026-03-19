@@ -102,6 +102,15 @@ export function useExpenseDetails(id: string) {
     });
 }
 
+export function useExpenseEditability(id: string) {
+    return useQuery({
+        queryKey: ['expenses', 'editable', id],
+        queryFn: () => ExpenseService.getExpenseEditability(id),
+        enabled: !!id,
+        retry: retryService,
+    });
+}
+
 export function useUpdateExpense(groupId?: string) {
     const queryClient = useQueryClient();
 

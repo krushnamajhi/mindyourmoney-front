@@ -128,7 +128,7 @@ export function GroupDetailsPage() {
                                         Add the first one
                                     </button>
                                 </div>
-                            ) : <ExpenseRowsByDate rows={expenseRows} onExpenseClick={handleRowClick} hideGroupTag />}
+                            ) : <ExpenseRowsByDate rows={expenseRows} onExpenseClick={handleRowClick} hideGroupTag listHeight={540} />}
                         </div>
                     )}
 

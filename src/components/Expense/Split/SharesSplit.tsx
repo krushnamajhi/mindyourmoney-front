@@ -1,9 +1,11 @@
 import type { User, DebtMemberSplits } from '../../../domain/models';
 import { cn } from '../../../utils/cn';
 
+type UserWithActive = User & { isActive?: boolean };
+
 interface SharesSplitProps {
     amount: number;
-    members: User[];
+    members: UserWithActive[];
     definitions: DebtMemberSplits[];
     onChange: (definitions: DebtMemberSplits[]) => void;
     isReadOnly?: boolean;
@@ -45,7 +47,9 @@ export function SharesSplit({ amount, members, definitions, onChange, isReadOnly
                                 {member.firstName?.charAt(0) || member.email.charAt(0)}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-slate-700 truncate">{member.fullName || member.email}</p>
+                                <p className="text-sm font-bold text-slate-700 truncate">
+                                    {member.fullName || member.email} {isReadOnly && member.isActive === false && "(Inactive)"}
+                                </p>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <div className="relative w-24">

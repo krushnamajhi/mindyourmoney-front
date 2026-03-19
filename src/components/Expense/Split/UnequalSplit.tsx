@@ -1,9 +1,11 @@
 import type { User, DebtMemberSplits } from '../../../domain/models';
 import { cn } from '../../../utils/cn';
 
+type UserWithActive = User & { isActive?: boolean };
+
 interface UnequalSplitProps {
     amount: number;
-    members: User[];
+    members: UserWithActive[];
     definitions: DebtMemberSplits[];
     onChange: (definitions: DebtMemberSplits[]) => void;
     isReadOnly?: boolean;
@@ -16,7 +18,7 @@ export function UnequalSplit({ amount, members, definitions, onChange, isReadOnl
         if (value != null) {
             _value = value;
         }
-        const otherDefs = definitions.filter(d => d.userId !== userId);
+        const otherDefs = definitions.filter(d => Number(d.userId) !== Number(userId));
         onChange([...otherDefs, { userId, amount: _value }]);
     };
 
@@ -25,8 +27,10 @@ export function UnequalSplit({ amount, members, definitions, onChange, isReadOnl
     const isValid = Math.abs(remaining) < 0.01;
 
     const getAmount = (userId: string) => {
-        return definitions.find(d => d.userId === userId)?.amount || 0;
+        return definitions.find(d => Number(d.userId) === Number(userId))?.amount || 0;
     };
+
+    console.log(amount, members, definitions, "exact")
 
     return (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -54,7 +58,9 @@ export function UnequalSplit({ amount, members, definitions, onChange, isReadOnl
                                 {member.firstName?.charAt(0) || member.email.charAt(0)}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-slate-700 truncate">{member.fullName || member.email}</p>
+                                <p className="text-sm font-bold text-slate-700 truncate">
+                                    {member.fullName || member.email} {isReadOnly && member.isActive === false && "(Inactive)"}
+                                </p>
                             </div>
                             <div className="relative w-32">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>

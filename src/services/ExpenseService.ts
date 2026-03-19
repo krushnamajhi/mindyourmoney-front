@@ -5,6 +5,11 @@ export class ExpenseService {
 
     private static URL = "/expense-tracker/expense"
 
+    static async getExpenseEditability(id: string): Promise<{ editable: boolean; message?: string }> {
+        const response = await apiClient.get(this.URL + '/' + id + '/editable');
+        return response.data.data;
+    }
+
     static async getExpenses(): Promise<Expense[]> {
         const response = await apiClient.get(this.URL + '/list');
         return response.data.expenses;

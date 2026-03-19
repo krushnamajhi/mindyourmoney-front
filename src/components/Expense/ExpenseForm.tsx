@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { Calendar, DollarSign, Euro, IndianRupee, JapaneseYen, ReceiptText, Users } from 'lucide-react';
 import { useCreateExpense, useExpenseDetails, useUpdateExpense } from '../../hooks/useExpenses';
 import { useExpenseCategories } from '../../hooks/useExpenseCategories';
-import { useGroups } from '../../hooks/useGroups';
+import { useGroupMembersByGroup, useGroups } from '../../hooks/useGroups';
 import { useUsers } from '../../hooks/useUsers';
 import { CreateExpenseSchema, DebtMemberSplitsSchema, ExpenseItemLinesSchema, type ExpenseItemLine } from '../../domain/models';
 import { cn } from '../../utils/cn';
@@ -78,6 +78,17 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
     // ... (Memo/Effect code remains same, skipping for brevity but keeping in mind the structure)
     const defaultFormValues: FormState = useMemo(() => {
         if (expenseId && expense) {
+            const normalizedDebtMemberSplits = (expense.debtMemberSplits || []).map((s: any) => ({
+                ...s,
+                userId: s?.userId !== undefined && s?.userId !== null ? s.userId : s.userId
+            }));
+            const normalizedExpenseItemLines = (expense.expenseItemLines || []).map((line: any) => ({
+                ...line,
+                debtMemberSplitsExpenseItemLines: (line?.debtMemberSplitsExpenseItemLines || []).map((s: any) => ({
+                    ...s,
+                    userId: s?.userId !== undefined && s?.userId !== null ? String(s.userId) : s.userId
+                }))
+            }));
             return {
                 title: expense.title || '',
                 description: expense.description || '',
@@ -88,8 +99,8 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
                 expenseCategoryId: expense.expenseCategoryId || -1,
                 paidByUserId: expense.paidByUserId || currentUser?.id,
                 splitType: (expense.splitType as FormState['splitType']) || 'EQUAL',
-                debtMemberSplits: expense.debtMemberSplits || [],
-                expenseItemLines: expense.expenseItemLines || [],
+                debtMemberSplits: normalizedDebtMemberSplits,
+                expenseItemLines: normalizedExpenseItemLines,
             };
         }
         return {
@@ -128,11 +139,15 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
         }
     }, [expense, expenseId, setValue, defaultFormValues]);
 
+
     const selectedGroupId = watch('groupId');
     const isShared = watch('isShared');
     const splitType = watch('splitType');
     const amount = watch('amount');
     const expenseDate = watch('expenseDate');
+    const watchedPaidByUserId = watch('paidByUserId');
+    const watchedDebtMemberSplits = watch('debtMemberSplits');
+    const watchedExpenseItemLines = watch('expenseItemLines');
 
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
@@ -147,29 +162,80 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    const { data: groupMembersByGroup } = useGroupMembersByGroup(
+        selectedGroupId ? String(selectedGroupId) : ''
+    );
+
+    useEffect(() => {
+        if(selectedGroupId != expense?.groupId)
+        {
+            setValue('expenseItemLines', []);
+            setValue('debtMemberSplits', []);
+        }
+
+    },[selectedGroupId])
+
     const availableMembers = useMemo(() => {
         if (!selectedGroupId || !groups) return allUsers || [];
         const group = groups.find(g => g.id == selectedGroupId);
         if (!group) return allUsers || [];
-        return group.groupMembers || [];
-    }, [selectedGroupId, groups, allUsers]);
+        const activeMembers = group.groupMembers || [];
+
+        if (!isViewOnly || !groupMembersByGroup || groupMembersByGroup.length === 0) {
+            return activeMembers;
+        }
+
+        const paidByUserId = watchedPaidByUserId;
+        const debtMemberSplits = (watchedDebtMemberSplits || []) as Array<{ userId: number | string }>;
+        const expenseItemLines = (watchedExpenseItemLines || []) as Array<{
+            debtMemberSplitsExpenseItemLines?: Array<{ userId: number | string }>
+        }>;
+
+        const involvedMemberIds = new Set<string>();
+        if (paidByUserId !== undefined && paidByUserId !== null && String(paidByUserId) !== '') {
+            involvedMemberIds.add(String(paidByUserId));
+        }
+        debtMemberSplits.forEach((split) => involvedMemberIds.add(String(split.userId)));
+        expenseItemLines.forEach((line) => {
+            (line.debtMemberSplitsExpenseItemLines || []).forEach((split) => {
+                involvedMemberIds.add(String(split.userId));
+            });
+        });
+
+        return groupMembersByGroup
+            .filter((member) => member.isActive || involvedMemberIds.has(String(member.userId)))
+            .map((member) => ({
+                ...member.user,
+                id: String(member.userId),
+                isActive: member.isActive
+            }));
+    }, [
+        selectedGroupId,
+        groups,
+        allUsers,
+        isViewOnly,
+        groupMembersByGroup,
+        watchedPaidByUserId,
+        watchedDebtMemberSplits,
+        watchedExpenseItemLines
+    ]);
 
     useEffect(() => {
         if (!isShared || availableMembers.length === 0 || isViewOnly) return;
         if (splitType === 'EQUAL') {
             if (getValues('debtMemberSplits')?.length === 0) {
-                setValue('debtMemberSplits', availableMembers.map(m => ({ userId: m.id })));
+                setValue('debtMemberSplits', availableMembers. map(m => ({ userId: String(m.id) })));
             }
             else {
-                const validIds = new Set(availableMembers.map(m => m.id));
+                const validIds = new Set(availableMembers.map(m => String(m.id)));
                 const currentSplits = getValues('debtMemberSplits') || [];
-                const filtered = currentSplits.filter((s: { userId: string }) => validIds.has(s.userId));
+                const filtered = currentSplits.filter((s: { userId: string }) => validIds.has(String(s.userId)));
                 setValue('debtMemberSplits', filtered);
             }
         } else {
-            const validIds = new Set(availableMembers.map(m => m.id));
+            const validIds = new Set(availableMembers.map(m => String(m.id)));
             const currentSplits = getValues('debtMemberSplits') || [];
-            const filtered = currentSplits.filter((s: { userId: string }) => validIds.has(s.userId));
+            const filtered = currentSplits.filter((s: { userId: string }) => validIds.has(String(s.userId)));
             setValue('debtMemberSplits', filtered);
         }
     }, [isShared, availableMembers, splitType, setValue, getValues, isViewOnly]);
@@ -186,16 +252,16 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
             currentGroupMembers = allUsers.map(u => u.id);
         }
 
-        const validMemberIds = new Set(availableMembers.map(m => m.id));
+        const validMemberIds = new Set(availableMembers.map(m => String(m.id)));
         const filteredDebtSplits = (value.debtMemberSplits || []).filter(
-            (s: { userId: string }) => validMemberIds.has(s.userId)
+            (s: { userId: string }) => validMemberIds.has(String(s.userId))
         );
 
         const expenseItemLines = (value.expenseItemLines || []).map((expenseItemLine: ExpenseItemLine) => {
             return {
                 ...expenseItemLine,
                 debtMemberSplitsExpenseItemLines: expenseItemLine.debtMemberSplitsExpenseItemLines?.filter(
-                    (s: { userId: string }) => validMemberIds.has(s.userId)
+                    (s: { userId: string }) => validMemberIds.has(String(s.userId))
                 )
             }
         })
@@ -208,7 +274,7 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
             paidByUserId: value.paidByUserId === '' ? null : value.paidByUserId,
             expenseCategoryId: value.expenseCategoryId == -1 ? null : Number(value.expenseCategoryId),
         };
-
+        console.log(payload, "payload", value.debtMemberSplits, "value.debtMemberSplits")
         try {
             let id = expenseId
             if (expenseId) {
@@ -231,6 +297,8 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
     if (expenseId && error) {
         return (<ErrorDisplay message="Failed to load expense details." />);
     }
+    console.log(getValues("debtMemberSplits"), "debtMemberSplits")
+    console.log(expense, "expense")
 
     const renderCurrencySymbol = () => {
         const className = cn("h-5 w-5 transition-colors", errors.amount ? "text-red-400" : "text-slate-400 group-focus-within:text-primary-500")
@@ -393,7 +461,7 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
                                         viewMode: isViewOnly,
                                         dataType: 'string',
                                         options: availableMembers?.map(u => ({
-                                            label: currentUser?.id === u.id ? `${u.fullName || 'User'} (You)` : (u.fullName || u.email),
+                                            label: `${currentUser?.id === u.id ? `${u.fullName || 'User'} (You)` : (u.fullName || u.email)}${isViewOnly && (u as any).isActive === false ? ' (Inactive)' : ''}`,
                                             value: String(u.id)
                                         })) || [],
                                         placeholder: 'Select Payer',
@@ -443,7 +511,7 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
                                                             <EqualSplit
                                                                 amount={amount}
                                                                 members={availableMembers}
-                                                                selectedMemberIds={(field.value || []).map((d: { userId: string }) => d.userId)}
+                                                                selectedMemberIds={(field.value || []).map((d: { userId : string }) => Number(d.userId))}
                                                                 onChange={(ids) => field.onChange(ids.map(id => ({ userId: id })))}
                                                                 isReadOnly={isViewOnly}
                                                             />

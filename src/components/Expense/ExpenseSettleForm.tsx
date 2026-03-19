@@ -1,7 +1,7 @@
 import { useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { DollarSign, Euro, IndianRupee, JapaneseYen, Handshake } from 'lucide-react';
-import { useGroups } from '../../hooks/useGroups';
+import { useGroupMembersByGroup, useGroups } from '../../hooks/useGroups';
 import { useUsers } from '../../hooks/useUsers';
 import { cn } from '../../utils/cn';
 import { Loader } from '../UI/Loader';
@@ -80,14 +80,39 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
 
     const selectedGroupId = watch('groupId');
     const paidByUserId = watch('paidByUserId');
+    const settledMemberId = watch('settledMemberId');
+
+    const { data: groupMembersByGroup } = useGroupMembersByGroup(
+        selectedGroupId ? String(selectedGroupId) : ''
+    );
 
     // Derive available members from group or all users
     const availableMembers = useMemo(() => {
         if (!selectedGroupId || !groups) return allUsers || [];
         const group = groups.find(g => Number(g.id) == selectedGroupId);
         if (!group) return allUsers || [];
-        return group.groupMembers || [];
-    }, [selectedGroupId, groups, allUsers]);
+        const activeMembers = group.groupMembers || [];
+
+        if (!isViewOnly || !groupMembersByGroup || groupMembersByGroup.length === 0) {
+            return activeMembers;
+        }
+
+        const involvedMemberIds = new Set<string>();
+        if (paidByUserId !== undefined && paidByUserId !== null && String(paidByUserId) !== '') {
+            involvedMemberIds.add(String(paidByUserId));
+        }
+        if (settledMemberId !== undefined && settledMemberId !== null && String(settledMemberId) !== '') {
+            involvedMemberIds.add(String(settledMemberId));
+        }
+
+        return groupMembersByGroup
+            .filter((member) => member.isActive || involvedMemberIds.has(String(member.userId)))
+            .map((member) => ({
+                ...member.user,
+                id: String(member.userId),
+                isActive: member.isActive
+            }));
+    }, [selectedGroupId, groups, allUsers, isViewOnly, groupMembersByGroup, paidByUserId, settledMemberId]);
 
     // Filter out the payer from the settled member list
     const settleableMembers = useMemo(() => {
@@ -198,7 +223,7 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
                                 viewMode: isViewOnly,
                                 dataType: 'string',
                                 options: availableMembers?.map(u => ({
-                                    label: currentUser?.id === u.id ? `${u.fullName || 'User'} (You)` : (u.fullName || u.email),
+                                    label: `${currentUser?.id === u.id ? `${u.fullName || 'User'} (You)` : (u.fullName || u.email)}${isViewOnly && (u as any).isActive === false ? ' (Inactive)' : ''}`,
                                     value: String(u.id)
                                 })) || [],
                                 placeholder: 'Who paid?',
@@ -215,7 +240,7 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
                                 viewMode: isViewOnly,
                                 dataType: 'string',
                                 options: settleableMembers?.map(u => ({
-                                    label: currentUser?.id === u.id ? `${u.fullName || 'User'} (You)` : (u.fullName || u.email),
+                                    label: `${currentUser?.id === u.id ? `${u.fullName || 'User'} (You)` : (u.fullName || u.email)}${isViewOnly && (u as any).isActive === false ? ' (Inactive)' : ''}`,
                                     value: String(u.id)
                                 })) || [],
                                 placeholder: 'Who received?',

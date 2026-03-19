@@ -9,10 +9,12 @@ import { UnequalSplit } from './UnequalSplit';
 import { SplitTypeDropdown, splitTypeOptions } from '../../UI/SplitTypeDropdown';
 // import { cn } from '../../../utils/cn';
 
+type UserWithActive = User & { isActive?: boolean };
+
 interface ItemSplitModalProps {
     isOpen: boolean;
     onClose: () => void;
-    members: User[];
+    members: UserWithActive[];
     initialSplitType: SplitType;
     item: ExpenseItemLine;
     onSave: (splitType: SplitType, definitions: DebtMemberSplitExpenseItemLine[]) => void;
@@ -30,8 +32,8 @@ export function ItemSplitModal({
 }: ItemSplitModalProps) {
     const [splitType, setSplitType] = useState<SplitType>(initialSplitType);
     const [definitions, setDefinitions] = useState<DebtMemberSplitExpenseItemLine[]>(item.debtMemberSplitsExpenseItemLines || []);
-    const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(
-        item.debtMemberSplitsExpenseItemLines?.map(d => d.userId) || []
+    const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>(
+        item.debtMemberSplitsExpenseItemLines?.map(d => Number(d.userId)) || []
     );
 
     // Reset state when modal opens
@@ -39,7 +41,7 @@ export function ItemSplitModal({
         if (isOpen) {
             setSplitType(initialSplitType);
             setDefinitions(item.debtMemberSplitsExpenseItemLines || []);
-            setSelectedMemberIds(item.debtMemberSplitsExpenseItemLines?.map(d => d.userId) || []);
+            setSelectedMemberIds(item.debtMemberSplitsExpenseItemLines?.map(d => Number(d.userId)) || []);
         }
         console.log(isReadOnly)
     }, [isOpen, initialSplitType, item.debtMemberSplitsExpenseItemLines]);
@@ -55,7 +57,7 @@ export function ItemSplitModal({
             // For others, we might want to start fresh or convert
             // For now, let's reset values but keep members if possible?
             // Simplest: Reset to empty definitions for clarity, OR default to equal shares
-            setDefinitions(selectedMemberIds.map(id => ({ userId: id })));
+            setDefinitions(selectedMemberIds.map(id => ({ userId: id.toString() })));
         }
     };
 
@@ -123,7 +125,7 @@ export function ItemSplitModal({
                                 members={members}
                                 selectedMemberIds={selectedMemberIds}
                                 onChange={(ids) => {
-                                    setSelectedMemberIds(ids);
+                                    setSelectedMemberIds(ids.map((id) => Number(id)));
                                     // Definitions for EQUAL are just member IDs effectively,
                                     // but we store them as definitions for consistency
                                     setDefinitions(ids.map(id => ({ userId: id })));

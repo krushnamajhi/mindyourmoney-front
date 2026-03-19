@@ -41,6 +41,20 @@ export const GroupMemberSchema = z.object({
 
 export type GroupMember = z.infer<typeof GroupMemberSchema>;
 
+export interface GroupMemberByGroup {
+    groupId: number;
+    userId: number;
+    isActive: boolean;
+    user: {
+        id: number;
+        email: string;
+        firstName: string;
+        lastName: string;
+        fullName: string;
+    };
+}
+
+
 // ============================================
 // Group Schema (Updated)
 // ============================================

@@ -4,10 +4,12 @@ import type { User } from '../../../domain/models';
 import { cn } from '../../../utils/cn';
 import { useAuth } from '../../../context/AuthContext';
 
+type UserWithActive = User & { isActive?: boolean };
+
 interface EqualSplitProps {
     amount: number;
-    members: User[];
-    selectedMemberIds: string[];
+    members: UserWithActive[];
+    selectedMemberIds: number[];
     onChange: (memberIds: string[]) => void;
     isReadOnly?: boolean;
 }
@@ -15,18 +17,19 @@ interface EqualSplitProps {
 export function EqualSplit({ amount, members, selectedMemberIds, onChange, isReadOnly = false }: EqualSplitProps) {
     const { user: currentUser } = useAuth();
 
-    const toggleMember = (id: string) => {
+    const toggleMember = (id: number) => {
         if (isReadOnly) return;
         if (selectedMemberIds.includes(id)) {
-            onChange(selectedMemberIds.filter(m => m !== id));
+            onChange(selectedMemberIds.filter(m => m !== id).map(m => m.toString()));
         } else {
-            onChange([...selectedMemberIds, id]);
+            onChange([...selectedMemberIds.map(m => m.toString()), id.toString()]);
         }
     };
 
     const splitAmount = selectedMemberIds.length > 0
         ? amount / selectedMemberIds.length
         : 0;
+    console.log(selectedMemberIds, members, amount,"equalSplits")
 
     return (
         <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -41,12 +44,12 @@ export function EqualSplit({ amount, members, selectedMemberIds, onChange, isRea
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {members.map(member => {
-                    const isSelected = selectedMemberIds.includes(member.id);
+                    const isSelected = selectedMemberIds.includes(Number(member.id));
                     return (
                         <button
                             key={member.id}
                             type="button"
-                            onClick={() => toggleMember(member.id)}
+                            onClick={() => toggleMember(Number(member.id))}
                             className={cn(
                                 "flex items-center justify-between p-3 rounded-xl border transition-all duration-200 text-left group",
                                 isSelected
@@ -65,7 +68,7 @@ export function EqualSplit({ amount, members, selectedMemberIds, onChange, isRea
                                     "text-sm font-medium",
                                     isSelected ? "text-primary-900" : "text-slate-600"
                                 )}>
-                                    {member.fullName || member.email} {currentUser?.id == member.id && "(You)"}
+                                    {member.fullName || member.email} {currentUser?.id == member.id && "(You)"} {isReadOnly && member.isActive === false && "(Inactive)"}
                                 </span>
                             </div>
                             {isSelected && (

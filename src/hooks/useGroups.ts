@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GroupService } from '../services/GroupService';
-import type { Group } from '../domain/models';
+import type { Group, GroupMemberByGroup } from '../domain/models';
+import { retryService } from '../utils/common';
 
 export function useGroups() {
     return useQuery({
@@ -14,6 +15,15 @@ export function useGroup(id: string) {
         queryKey: ['groups', id],
         queryFn: async () => await GroupService.getGroupById(id),
         enabled: !!id,
+        retry:retryService
+    });
+}
+
+export function useGroupMembersByGroup(groupId: string) {
+    return useQuery<GroupMemberByGroup[]>({
+        queryKey: ['groups', 'members', groupId],
+        queryFn: async () => await GroupService.getMembersByGroupId(groupId),
+        enabled: !!groupId,
     });
 }
 

@@ -2,9 +2,11 @@
 import type { User, DebtMemberSplits } from '../../../domain/models';
 import { cn } from '../../../utils/cn';
 
+type UserWithActive = User & { isActive?: boolean };
+
 interface PercentageSplitProps {
     amount: number;
-    members: User[];
+    members: UserWithActive[];
     definitions: DebtMemberSplits[];
     onChange: (definitions: DebtMemberSplits[]) => void;
     isReadOnly?: boolean;
@@ -51,7 +53,9 @@ export function PercentageSplit({ amount, members, definitions, onChange, isRead
                                 {member.firstName?.charAt(0).toUpperCase() || member.email.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-slate-700 truncate">{member.fullName || member.email}</p>
+                                <p className="text-sm font-bold text-slate-700 truncate">
+                                    {member.fullName || member.email} {isReadOnly && member.isActive === false && "(Inactive)"}
+                                </p>
                                 <div className="w-20 text-left text-xs text-slate-500">
                                     ${shareAmount.toFixed(2)}
                                 </div>

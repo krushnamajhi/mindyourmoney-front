@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/Layout/MainLayout';
 import BackArrow from '../components/UI/BackArrow';
 import FormHeader from '../components/UI/FormHeader';
-import { useDeleteExpense } from '../hooks/useExpenses';
+import { useDeleteExpense, useExpenseEditability } from '../hooks/useExpenses';
 import MenuContainer from '../components/Containers/Menu/MenuContainer';
 import DeleteMenuOption from '../components/UI/Menu/MenuOptions/DeleteMenuOption';
 import { ExpenseView } from '../components/Expense/ExpenseView';
@@ -11,6 +11,10 @@ import EditMenuOption from '../components/UI/Menu/MenuOptions/EditMenuOption';
 export function ExpenseViewPage() {
     const { expenseId } = useParams();
     const navigate = useNavigate();
+    const editabilityQuery = useExpenseEditability(expenseId || '');
+    const notEditable = editabilityQuery.data?.editable === false;
+    const notEditableMessage = editabilityQuery.data?.message;
+
     const handleDelete = () => {
         if (expenseId) {
             deleteExpense.mutate(expenseId.toString());
@@ -45,9 +49,14 @@ export function ExpenseViewPage() {
                         description={'View the details of your expense'}
                     />
                     <div className="ml-auto">
-                        {renderMenu()}
+                        {!notEditable ? renderMenu() : null}
                     </div>
                 </div>
+                {notEditable ? (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
+                        {notEditableMessage || 'This expense is not editable.'}
+                    </div>
+                ) : null}
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
                     <ExpenseView
                         expenseId={expenseId || ''}
