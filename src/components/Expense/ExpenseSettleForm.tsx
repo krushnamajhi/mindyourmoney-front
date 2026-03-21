@@ -19,7 +19,7 @@ import type { SettleExpenseDto } from '../../domain/models';
 type SettleFormState = SettleExpenseDto;
 
 interface ExpenseSettleFormProps {
-    expenseId?: string | null | undefined;
+    expenseId?: number | undefined;
     passedData?: SettleExpenseDto;
     onSuccess?: () => void;
     onCancel?: () => void;
@@ -30,7 +30,7 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
     const { user: currentUser } = useAuth();
     const { data: groups } = useGroups();
     const { data: allUsers } = useUsers();
-    const { data: existingExpense, isLoading, error } = useSettledExpense(expenseId || '');
+    const { data: existingExpense, isLoading, error } = useSettledExpense(expenseId);
     const createSettle = useCreateSettledExpense();
     const updateSettle = useUpdateSettledExpense();
     const isPending = createSettle.isPending || updateSettle.isPending;
@@ -83,7 +83,7 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
     const settledMemberId = watch('settledMemberId');
 
     const { data: groupMembersByGroup } = useGroupMembersByGroup(
-        selectedGroupId ? String(selectedGroupId) : ''
+        selectedGroupId
     );
 
     // Derive available members from group or all users

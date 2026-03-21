@@ -65,11 +65,12 @@ export function MemberSelectionModal({ initialSelectedIds, onSave, onCancel, fil
                 <div className="p-2 overflow-y-auto flex-1">
                     <div className="space-y-1">
                         {usersToDisplay.map(user => {
-                            const isSelected = selectedIds.includes(user.id);
+                            const userId = String(user.id);
+                            const isSelected = selectedIds.includes(userId);
                             return (
                                 <button
                                     key={user.id}
-                                    onClick={() => toggleUser(user.id)}
+                                    onClick={() => toggleUser(userId)}
                                     className={`w-full flex items-center p-3 rounded-lg transition-colors ${isSelected ? 'bg-primary-50' : 'hover:bg-slate-50'}`}
                                 >
                                     <div className={`w-5 h-5 rounded border mr-3 flex items-center justify-center transition-colors ${isSelected ? 'bg-primary-600 border-primary-600 text-white' : 'border-slate-300 bg-white'}`}>

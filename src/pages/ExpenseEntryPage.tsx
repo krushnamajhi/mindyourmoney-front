@@ -7,7 +7,7 @@ import FormHeader from '../components/UI/FormHeader';
 
 export function ExpenseEntryPage() {
     const [searchParams] = useSearchParams();
-    const expenseId = searchParams.get('id');
+    const expenseId = searchParams.get('id') ? Number(searchParams.get('id')) : undefined;
     const edit = searchParams.get('edit');
     const navigate = useNavigate();
     const isEditMode = !!expenseId && edit === 'true';

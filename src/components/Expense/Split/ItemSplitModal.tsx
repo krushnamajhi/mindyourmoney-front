@@ -57,7 +57,7 @@ export function ItemSplitModal({
             // For others, we might want to start fresh or convert
             // For now, let's reset values but keep members if possible?
             // Simplest: Reset to empty definitions for clarity, OR default to equal shares
-            setDefinitions(selectedMemberIds.map(id => ({ userId: id.toString() })));
+            setDefinitions(selectedMemberIds.map(id => ({ userId: id })));
         }
     };
 
@@ -128,7 +128,7 @@ export function ItemSplitModal({
                                     setSelectedMemberIds(ids.map((id) => Number(id)));
                                     // Definitions for EQUAL are just member IDs effectively,
                                     // but we store them as definitions for consistency
-                                    setDefinitions(ids.map(id => ({ userId: id })));
+                                    setDefinitions(ids.map(id => ({ userId: Number(id) })));
                                 }}
                                 isReadOnly={isReadOnly}
                             />

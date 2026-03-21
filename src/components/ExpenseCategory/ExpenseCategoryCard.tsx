@@ -10,7 +10,7 @@ interface ExpenseCategoryCardProps {
     category: ExpenseCategoryModel;
     onView: (category: ExpenseCategoryModel) => void;
     onEdit: (category: ExpenseCategoryModel) => void;
-    onDelete: (id: string) => void;
+    onDelete: (id: number) => void;
 }
 
 export function ExpenseCategoryCard({ category, onView, onEdit, onDelete }: ExpenseCategoryCardProps) {

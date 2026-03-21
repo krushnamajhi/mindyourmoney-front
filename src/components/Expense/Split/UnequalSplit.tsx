@@ -12,13 +12,13 @@ interface UnequalSplitProps {
 }
 
 export function UnequalSplit({ amount, members, definitions, onChange, isReadOnly = false }: UnequalSplitProps) {
-    const handleAmountChange = (userId: string, value: number) => {
+    const handleAmountChange = (userId: number, value: number) => {
         if (isReadOnly) return;
         let _value = 0
         if (value != null) {
             _value = value;
         }
-        const otherDefs = definitions.filter(d => Number(d.userId) !== Number(userId));
+        const otherDefs = definitions.filter(d => d.userId !== userId);
         onChange([...otherDefs, { userId, amount: _value }]);
     };
 
@@ -26,7 +26,7 @@ export function UnequalSplit({ amount, members, definitions, onChange, isReadOnl
     const remaining = amount - totalAllocated;
     const isValid = Math.abs(remaining) < 0.01;
 
-    const getAmount = (userId: string) => {
+    const getAmount = (userId: string | number) => {
         return definitions.find(d => Number(d.userId) === Number(userId))?.amount || 0;
     };
 

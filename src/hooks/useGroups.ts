@@ -10,7 +10,7 @@ export function useGroups() {
     });
 }
 
-export function useGroup(id: string) {
+export function useGroup(id: number) {
     return useQuery({
         queryKey: ['groups', id],
         queryFn: async () => await GroupService.getGroupById(id),
@@ -19,7 +19,7 @@ export function useGroup(id: string) {
     });
 }
 
-export function useGroupMembersByGroup(groupId: string) {
+export function useGroupMembersByGroup(groupId?: number) {
     return useQuery<GroupMemberByGroup[]>({
         queryKey: ['groups', 'members', groupId],
         queryFn: async () => await GroupService.getMembersByGroupId(groupId),
@@ -41,7 +41,7 @@ export function useCreateGroup() {
 export function useUpdateGroup() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, updates }: { id: string, updates: Partial<Pick<Group, 'name' | 'description'>> }) =>
+        mutationFn: ({ id, updates }: { id: number, updates: Partial<Pick<Group, 'name' | 'description'>> }) =>
             GroupService.updateGroup(id, updates),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
@@ -53,7 +53,7 @@ export function useUpdateGroup() {
 export function useAddMember() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ groupId, userId }: { groupId: string; userId: string }) =>
+        mutationFn: ({ groupId, userId }: { groupId: number; userId: number }) =>
             GroupService.addMember(groupId, userId),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
@@ -65,7 +65,7 @@ export function useAddMember() {
 export function useRemoveMember() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ groupId, userId }: { groupId: string; userId: string }) =>
+        mutationFn: ({ groupId, userId }: { groupId: number; userId: number }) =>
             GroupService.removeMember(groupId, userId),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
@@ -77,7 +77,7 @@ export function useRemoveMember() {
 export function useLeaveGroup() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ groupId, userId }: { groupId: string; userId: string }) =>
+        mutationFn: ({ groupId, userId }: { groupId: number; userId: number }) =>
             GroupService.leaveGroup(groupId, userId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
@@ -88,7 +88,7 @@ export function useLeaveGroup() {
 export function useDeleteGroup() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (groupId: string) => GroupService.deleteGroup(groupId),
+        mutationFn: (groupId: number) => GroupService.deleteGroup(groupId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
         },

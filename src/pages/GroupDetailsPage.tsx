@@ -14,7 +14,7 @@ import { Filter_ALL, type ExpenseRow } from '../domain/models';
 type Tab = 'expenses' | 'balances';
 
 export function GroupDetailsPage() {
-    const { groupId } = useParams<{ groupId: string }>();
+    const groupId = Number(useParams<{ groupId: string }>().groupId);
     const navigate = useNavigate();
     const { data: group, isLoading: isGroupLoading, error: groupError } = useGroup(groupId!);
     const numericGroupId = groupId ? Number(groupId) : undefined;

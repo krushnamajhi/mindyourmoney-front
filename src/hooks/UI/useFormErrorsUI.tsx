@@ -15,6 +15,11 @@ export function useFormErrorsUI() {
         }
     };
 
+    const addErrorMessage = (err: string)  => {
+        const errObj: APIError = {success: false, message: err, statusCode: 0, errors: [err] }
+        setValidationErrors([...validationErrors, errObj])
+    }
+
     const clearErrors = () => {
         setValidationErrors([]);
     };
@@ -86,6 +91,7 @@ export function useFormErrorsUI() {
         getError,
         hasErrors,
         renderError,
-        highlightErrorField
+        highlightErrorField,
+        addErrorMessage
     };
 }

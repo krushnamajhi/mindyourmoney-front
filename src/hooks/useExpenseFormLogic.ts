@@ -35,7 +35,7 @@ export function useExpenseFormLogic(form: UseFormReturn<any>, isViewOnly: boolea
             setValue('debtMemberSplits', availableMembers.map(m => ({ userId: m.id })));
         } else {
             // Otherwise, filter out members who are no longer in the group
-            const filtered = currentSplits.filter((s: { userId: string }) => validIds.has(s.userId));
+            const filtered = currentSplits.filter((s: { userId: number }) => validIds.has(s.userId));
             // Only update if the length changed to avoid infinite loops
             if (filtered.length !== currentSplits.length) {
                 setValue('debtMemberSplits', filtered);
@@ -49,22 +49,22 @@ export function useExpenseFormLogic(form: UseFormReturn<any>, isViewOnly: boolea
         
         // Final filter for debt splits to ensure data integrity
         const filteredDebtSplits = (value.debtMemberSplits || []).filter(
-            (s: { userId: string }) => validMemberIds.has(s.userId)
+            (s: { userId: number }) => validMemberIds.has(s.userId)
         );
 
         const expenseItemLines = (value.expenseItemLines || []).map((line: any) => ({
             ...line,
             debtMemberSplitsExpenseItemLines: line.debtMemberSplitsExpenseItemLines?.filter(
-                (s: { userId: string }) => validMemberIds.has(s.userId)
+                (s: { userId: number }) => validMemberIds.has(s.userId)
             )
         }));
 
         let groupMembers: string[] = [];
         if (value.groupId && groups) {
             const g = groups.find(grp => grp.id === value.groupId);
-            if (g && g.groupMembers) groupMembers = g.groupMembers.map(m => m.id);
+            if (g && g.groupMembers) groupMembers = g.groupMembers.map(m => String(m.id));
         } else if (allUsers) {
-            groupMembers = allUsers.map(u => u.id);
+            groupMembers = allUsers.map(u => String(u.id));
         }
 
         return {

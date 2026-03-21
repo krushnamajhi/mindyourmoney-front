@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 interface ExpenseCategoryDetailsModalProps {
     category: ExpenseCategoryModel;
     onClose: () => void;
-    onDelete: (id: string) => void;
+    onDelete: (id: number) => void;
 }
 
 export function ExpenseCategoryDetailsModal({ category, onClose, onDelete }: ExpenseCategoryDetailsModalProps) {

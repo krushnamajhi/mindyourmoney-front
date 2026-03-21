@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreateExpenseDto, Expense, ExpenseFilters, ExpenseRowYearMonthWise } from '../domain/models';
+import type { CreateExpenseDto, Expense, ExpenseFilters, ExpenseRowYearMonthWise, UpdateExpenseDto } from '../domain/models';
 import { ExpenseService } from '../services/ExpenseService';
 import { retryService } from '../utils/common';
 
@@ -29,7 +29,7 @@ export function useFilterExpenseRows(filters: ExpenseFilters, enabled: boolean =
     });
 }
 
-export function useExpensesByGroupId(groupId: string) {
+export function useExpensesByGroupId(groupId: number) {
     return useQuery({
         queryKey: ['expenses', groupId],
         queryFn: async () => {
@@ -41,12 +41,12 @@ export function useExpensesByGroupId(groupId: string) {
     });
 }
 
-export function useCreateExpense(groupId: string) {
+export function useCreateExpense(groupId?: number) {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (dto: CreateExpenseDto & { groupMembers: string[] }) =>
-            ExpenseService.createExpense(dto, dto.groupMembers),
+        mutationFn: (dto: CreateExpenseDto) =>
+            ExpenseService.createExpense(dto),
 
         // Optimistic Update
         onMutate: async (newExpenseData) => {
@@ -84,7 +84,7 @@ export function useCreateExpense(groupId: string) {
     });
 }
 
-export function useExpense(id: string) {
+export function useExpense(id: number) {
     return useQuery({
         queryKey: ['expenses', 'basic_details', id],
         queryFn: () => ExpenseService.getExpenseById(id),
@@ -93,7 +93,7 @@ export function useExpense(id: string) {
     });
 }
 
-export function useExpenseDetails(id: string) {
+export function useExpenseDetails(id: number) {
     return useQuery({
         queryKey: ['expenses', 'full_details', id],
         queryFn: () => ExpenseService.getExpenseDetailsById(id),
@@ -102,7 +102,7 @@ export function useExpenseDetails(id: string) {
     });
 }
 
-export function useExpenseEditability(id: string) {
+export function useExpenseEditability(id: number) {
     return useQuery({
         queryKey: ['expenses', 'editable', id],
         queryFn: () => ExpenseService.getExpenseEditability(id),
@@ -111,12 +111,12 @@ export function useExpenseEditability(id: string) {
     });
 }
 
-export function useUpdateExpense(groupId?: string) {
+export function useUpdateExpense(groupId?: number) {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, dto, groupMembers }: { id: string, dto: any, groupMembers: string[] }) =>
-            ExpenseService.updateExpense(id, dto, groupMembers),
+        mutationFn: ({ id, dto }: { id: number, dto: UpdateExpenseDto }) =>
+            ExpenseService.updateExpense(id, dto),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['expenses'] });
             if (groupId) {
@@ -130,7 +130,7 @@ export function useUpdateExpense(groupId?: string) {
 export function useDeleteExpense() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (expenseId: string) => ExpenseService.deleteExpense(expenseId),
+        mutationFn: (expenseId: number) => ExpenseService.deleteExpense(expenseId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['expenses'] });
         },

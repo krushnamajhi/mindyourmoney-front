@@ -12,7 +12,7 @@ interface SharesSplitProps {
 }
 
 export function SharesSplit({ amount, members, definitions, onChange, isReadOnly = false }: SharesSplitProps) {
-    const handleSharesChange = (userId: string, shares: number) => {
+    const handleSharesChange = (userId: number, shares: number) => {
         if (isReadOnly) return;
         const otherDefs = definitions.filter(d => d.userId !== userId);
         onChange([...otherDefs, { userId, share: shares }]);
@@ -21,8 +21,8 @@ export function SharesSplit({ amount, members, definitions, onChange, isReadOnly
     const totalShares = definitions.reduce((sum, def) => sum + (def.share || 0), 0);
     const valuePerShare = totalShares > 0 ? amount / totalShares : 0;
 
-    const getShares = (userId: string) => {
-        return definitions.find(d => d.userId === userId)?.share || 0;
+    const getShares = (userId: string | number) => {
+        return definitions.find(d => Number(d.userId) === Number(userId))?.share || 0;
     };
 
     return (

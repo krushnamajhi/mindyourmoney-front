@@ -2,7 +2,7 @@ import type { DebtMemberSplitExpenseItemLine, DebtMemberSplits } from '../models
 import type { SplitStrategy, SplitResult } from './SplitStrategy';
 
 export class ExactSplitStrategy implements SplitStrategy {
-    calculateSplits(_totalAmount: number, _members: string[], definitions: DebtMemberSplits[] | DebtMemberSplitExpenseItemLine[]): SplitResult[] {
+    calculateSplits(_totalAmount: number, _members: Array<string | number>, definitions: DebtMemberSplits[] | DebtMemberSplitExpenseItemLine[]): SplitResult[] {
         return definitions.map(def => ({
             userId: def.userId,
             amount: def.amount || 0

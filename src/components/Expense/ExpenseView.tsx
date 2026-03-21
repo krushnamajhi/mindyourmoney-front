@@ -1,7 +1,7 @@
 import { ExpenseForm } from './ExpenseForm';
 
 interface ExpenseViewProps {
-    expenseId: string;
+    expenseId: number;
     onClose: () => void;
 }
 

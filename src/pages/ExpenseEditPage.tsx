@@ -16,14 +16,14 @@ export function ExpenseEditPage() {
     const navigate = useNavigate();
     const handleDelete = () => {
         if (expenseId) {
-            deleteExpense.mutate(expenseId.toString());
+            deleteExpense.mutate(Number(expenseId));
             navigate(-1);
         }
     };
     const deleteExpense = useDeleteExpense();
 
     const renderMenu = () => {
-        return (<MenuContainer id={expenseId || ''} compact={true} size={'large'}>
+        return (<MenuContainer id={Number(expenseId)} compact={true} size={'large'}>
             <ViewMenuOption onClick={(e) => {
                 e.stopPropagation();
                 navigate(`/expenses/view/${expenseId}`);
@@ -36,7 +36,7 @@ export function ExpenseEditPage() {
     }
 
     // Tabs logic removed, defaulting to standard view
-    const editabilityQuery = useExpenseEditability(expenseId || '');
+    const editabilityQuery = useExpenseEditability(Number(expenseId));
     const isEditable = editabilityQuery.data?.editable ?? true;
     const notEditableMessage = editabilityQuery.data?.message;
     const apiError = editabilityQuery.error as APIError | undefined;
@@ -63,7 +63,7 @@ export function ExpenseEditPage() {
                         <ErrorDisplay message={errorMessage} onRetry={() => editabilityQuery.refetch()} />
                     ) : isEditable ? (
                         <ExpenseForm
-                            expenseId={expenseId}
+                            expenseId={Number(expenseId)}
                             isSharedInitial={false}
                             onSuccess={() => navigate('/expenses')}
                             onCancel={() => navigate(-1)}

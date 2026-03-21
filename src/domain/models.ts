@@ -4,7 +4,7 @@ import { z } from 'zod';
 // User Schema
 // ============================================
 export const UserSchema = z.object({
-    id: z.string().uuid(),
+    id: z.number().int(),
     firstName: z.string().min(1, "First name is required"),
     lastName: z.string().min(1, "Last name is required"),
     email: z.string().email(),
@@ -12,19 +12,19 @@ export const UserSchema = z.object({
     fullName: z.string().optional(),
 });
 
-export type User = z.infer<typeof UserSchema>;
+export type User = z.infer<typeof UserSchema>
 
 // ============================================
 // Expense Category Model (Domain-Driven)
 // ============================================
 export const ExpenseCategoryModelSchema = z.object({
-    id: z.string().uuid(),
+    id: z.number().int(),
     name: z.string().min(1, "Category name is required"),
     description: z.string().optional(),
-    createdUserId: z.string().uuid().optional(),
+    createdUserId: z.number().int().optional(),
     createdUser: UserSchema.optional(),
 });
-export type ExpenseCategoryModel = z.infer<typeof ExpenseCategoryModelSchema>;
+export type ExpenseCategoryModel = z.infer<typeof ExpenseCategoryModelSchema>
 
 // Legacy Expense Category Enum (for backward compatibility in forms)
 export const ExpenseCategoryEnumSchema = z.enum(['Food & Drink', 'Groceries', 'Utilities', 'Transport', 'Housing', 'Entertainment', 'Health', 'Income', 'Other']);
@@ -34,12 +34,12 @@ export type ExpenseCategoryEnum = z.infer<typeof ExpenseCategoryEnumSchema>;
 // Group Member Model
 // ============================================
 export const GroupMemberSchema = z.object({
-    groupId: z.string().uuid(),
-    userId: z.string().uuid(),
+    groupId: z.number().int(),
+    userId: z.number().int(),
     user: UserSchema.optional(), // Optional nested user object
 });
 
-export type GroupMember = z.infer<typeof GroupMemberSchema>;
+export type GroupMember = z.infer<typeof GroupMemberSchema>
 
 export interface GroupMemberByGroup {
     groupId: number;
@@ -59,7 +59,7 @@ export interface GroupMemberByGroup {
 // Group Schema (Updated)
 // ============================================
 export const GroupSchema = z.object({
-    id: z.string().uuid(),
+    id: z.number().int(),
     name: z.string().min(1, "Group name is required"),
     description: z.string().optional(),
     groupMembers: z.array(GroupMemberSchema),
@@ -67,25 +67,25 @@ export const GroupSchema = z.object({
 });
 
 export const GroupsSchema = z.object({
-    id: z.string().uuid(),
+    id: z.number().int(),
     name: z.string().min(1, "Group name is required"),
     description: z.string().optional(),
     groupMembers: z.array(UserSchema),
     created_at: z.string().datetime(),
     balance: z.number().optional(),
 });
-export type Group = z.infer<typeof GroupSchema>;
-export type Groups = z.infer<typeof GroupsSchema>;
+export type Group = z.infer<typeof GroupSchema>
+export type Groups = z.infer<typeof GroupsSchema>
 
 
 // Legacy Group Schema (for backward compatibility during migration)
 export const LegacyGroupSchema = z.object({
-    id: z.string().uuid(),
+    id: z.number().int(),
     name: z.string().min(1, "Group name is required"),
     members: z.array(UserSchema),
     created_at: z.string().datetime(),
 });
-export type LegacyGroup = z.infer<typeof LegacyGroupSchema>;
+export type LegacyGroup = z.infer<typeof LegacyGroupSchema>
 
 // ============================================
 // Split Type Enum
@@ -101,20 +101,19 @@ export type ExpenseItemLineSplitType = z.infer<typeof ExpenseItemLineSplitType>;
 // Split Definition (Input for strategy)
 // ============================================
 export const DebtMemberSplitsSchema = z.object({
-    userId: z.string().uuid(),
+    userId: z.number().int(),
     amount: z.number().min(0).optional(), // For EXACT/ITEMS
     percent: z.number().min(0).max(100).optional(), // For PERCENTAGE
     share: z.number().min(0).optional(), // For SHARES
 });
 export type DebtMemberSplits = z.infer<typeof DebtMemberSplitsSchema>;
-
 export const DebtMemberSplitExpenseItemLineSchema = z.object({
-    userId: z.string().uuid(),
+    userId: z.number().int(),
     amount: z.number().min(0).optional(), // For EXACT/ITEMS
     percent: z.number().min(0).max(100).optional(), // For PERCENTAGE
     share: z.number().min(0).optional(), // For SHARES
 });
-export type DebtMemberSplitExpenseItemLine = z.infer<typeof DebtMemberSplitExpenseItemLineSchema>;
+export type DebtMemberSplitExpenseItemLine = z.infer<typeof DebtMemberSplitExpenseItemLineSchema>
 
 // ============================================
 // Expense Line (The result stored in DB)
@@ -127,7 +126,9 @@ export const ExpenseItemLinesSchema = z.object({
     amount: z.number(),
     debtMemberSplitsExpenseItemLines: z.array(DebtMemberSplitExpenseItemLineSchema).optional(),
 });
-export type ExpenseItemLine = z.infer<typeof ExpenseItemLinesSchema>;
+export type ExpenseItemLine = Omit<z.infer<typeof ExpenseItemLinesSchema>, 'debtMemberSplitsExpenseItemLines'> & {
+    debtMemberSplitsExpenseItemLines?: DebtMemberSplitExpenseItemLine[];
+};
 
 // ============================================
 // Expense Status
@@ -139,7 +140,7 @@ export type ExpenseStatus = z.infer<typeof ExpenseStatusSchema>;
 // Expense Schema (Updated with nested objects)
 // ============================================
 export const ExpenseSchema = z.object({
-    id: z.string().uuid(),
+    id: z.number().int(),
     title: z.string().min(1, "Title is required"),
     description: z.string().optional(),
     amount: z.number().positive("Amount must be positive"),
@@ -156,7 +157,7 @@ export const ExpenseSchema = z.object({
     userDebt: z.number().default(0),
     isSettled: z.boolean().optional(),
 });
-export type Expense = z.infer<typeof ExpenseSchema>;
+export type Expense = z.infer<typeof ExpenseSchema>
 
 // ============================================
 // Create Expense DTO
@@ -165,17 +166,52 @@ export const CreateExpenseSchema = z.object({
     title: z.string().min(1, "Title is required"),
     description: z.string().optional(),
     amount: z.number().positive("Amount must be positive"),
-    expenseDate: z.string().datetime(),
+    expenseDate: z.coerce.date(),
     isShared: z.boolean().default(true),
-    groupId: z.string().uuid(),
+    groupId: z.number().int().optional(),
     expenseCategoryId: z.coerce.number().optional(),
-    paidByUserId: z.string().uuid(),
+    paidByUserId: z.number().int(),
     splitType: SplitTypeSchema,
     status: ExpenseStatusSchema.optional(),
     debtMemberSplits: z.array(DebtMemberSplitsSchema).optional(),
     expenseItemLines: z.array(ExpenseItemLinesSchema).optional()
 });
-export type CreateExpenseDto = z.infer<typeof CreateExpenseSchema>;
+export type CreateExpenseDto = z.infer<typeof CreateExpenseSchema>
+
+
+export const UpdateExpenseSchema = z.object({
+  expenseDate: z.coerce.date().optional(),
+  title: z.string().min(1).optional(),
+  description: z.string().optional(),
+  amount: z.coerce.number().positive().optional(),
+  isShared: z.coerce.boolean().optional(),
+  paidByUserId: z.coerce.number().optional(),
+  groupId: z.coerce.number().int().optional(),
+  expenseCategoryId: z.coerce.number().int().optional(),
+  splitType: SplitTypeSchema.optional(),
+  // Made optional here
+  debtMemberSplits: z.array(DebtMemberSplitsSchema).optional(),
+  expenseItemLines: z.array(ExpenseItemLinesSchema).optional(),
+})
+
+export type UpdateExpenseDto = z.infer<typeof UpdateExpenseSchema>
+
+export const ExpenseFormSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    description: z.string().optional(),
+    amount: z.number().positive("Amount must be positive"),
+    expenseDate: z.string().datetime(),
+    isShared: z.boolean().default(true),
+    groupId: z.number().int(),
+    expenseCategoryId: z.coerce.number().optional(),
+    paidByUserId: z.number().int(),
+    splitType: SplitTypeSchema,
+    status: ExpenseStatusSchema.optional(),
+    debtMemberSplits: z.array(DebtMemberSplitsSchema).optional(),
+    expenseItemLines: z.array(ExpenseItemLinesSchema).optional()
+});
+export type ExpenseFormDto = z.infer<typeof CreateExpenseSchema>
+
 
 // ============================================
 // Authentication Types

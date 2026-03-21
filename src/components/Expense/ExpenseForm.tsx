@@ -6,7 +6,7 @@ import { useCreateExpense, useExpenseDetails, useUpdateExpense } from '../../hoo
 import { useExpenseCategories } from '../../hooks/useExpenseCategories';
 import { useGroupMembersByGroup, useGroups } from '../../hooks/useGroups';
 import { useUsers } from '../../hooks/useUsers';
-import { CreateExpenseSchema, DebtMemberSplitsSchema, ExpenseItemLinesSchema, type ExpenseItemLine } from '../../domain/models';
+import { CreateExpenseSchema, DebtMemberSplitsSchema, ExpenseItemLinesSchema, type CreateExpenseDto, type ExpenseItemLine, type UpdateExpenseDto } from '../../domain/models';
 import { cn } from '../../utils/cn';
 import { getCategoryTheme } from '../../utils/categoryThemes';
 import { EqualSplit } from './Split/EqualSplit';
@@ -42,7 +42,7 @@ const FormSchemaBase = CreateExpenseSchema.extend({
     amount: z.number().min(0.01, 'Amount must be greater than 0'),
     expenseDate: z.date({ error: 'Date is required' }),
     isShared: z.boolean(),
-    groupId: z.string().optional().or(z.literal('')),
+    groupId: z.number().optional(),
     expenseCategoryId: z.number().optional(),
     paidByUserId: z.number().or(z.string()).optional(),
     debtMemberSplits: z.array(DebtMemberSplitsSchema).optional(),
@@ -53,8 +53,8 @@ type FormState = z.infer<typeof FormSchemaBase>;
 
 
 interface ExpenseFormProps {
-    groupId?: string;
-    expenseId?: string | null | undefined;
+    groupId?: number;
+    expenseId?: number;
     isSharedInitial?: boolean;
     onSuccess?: () => void;
     onCancel?: () => void;
@@ -67,9 +67,9 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
     const { data: categories } = useExpenseCategories();
     const { data: groups } = useGroups();
     const { data: allUsers } = useUsers();
-    const { data: expense, isLoading, error } = useExpenseDetails(expenseId || '');
-    const createExpense = useCreateExpense(groupId || '');
-    const updateExpense = useUpdateExpense(groupId || '');
+    const { data: expense, isLoading, error } = expenseId? useExpenseDetails(expenseId) : {data: null};
+    const createExpense = useCreateExpense(groupId);
+    const updateExpense = useUpdateExpense(groupId);
     const isPending = createExpense.isPending;
     const { setFormErrors, renderError } = useFormErrorsUI();
     const { currency } = useSettings();
@@ -95,8 +95,8 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
                 amount: expense.amount || 0,
                 expenseDate: expense.expenseDate ? new Date(expense.expenseDate) : new Date(),
                 isShared: expense.isShared || false,
-                groupId: expense.groupId || '',
-                expenseCategoryId: expense.expenseCategoryId || -1,
+                groupId: expense.groupId,
+                expenseCategoryId: expense.expenseCategoryId,
                 paidByUserId: expense.paidByUserId || currentUser?.id,
                 splitType: (expense.splitType as FormState['splitType']) || 'EQUAL',
                 debtMemberSplits: normalizedDebtMemberSplits,
@@ -109,7 +109,7 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
             amount: 0,
             expenseDate: new Date(),
             isShared: isSharedInitial,
-            groupId: groupId || '',
+            groupId: groupId,
             expenseCategoryId: -1,
             paidByUserId: currentUser?.id,
             splitType: 'EQUAL',
@@ -162,9 +162,7 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const { data: groupMembersByGroup } = useGroupMembersByGroup(
-        selectedGroupId ? String(selectedGroupId) : ''
-    );
+    const { data: groupMembersByGroup } = selectedGroupId ? useGroupMembersByGroup(selectedGroupId) : {data: null};
 
     useEffect(() => {
         if(selectedGroupId != expense?.groupId)
@@ -185,28 +183,28 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
             return activeMembers;
         }
 
-        const paidByUserId = watchedPaidByUserId;
-        const debtMemberSplits = (watchedDebtMemberSplits || []) as Array<{ userId: number | string }>;
+        const paidByUserId = watchedPaidByUserId ? Number(watchedPaidByUserId): undefined;
+        const debtMemberSplits = (watchedDebtMemberSplits || []) as Array<{ userId: number }>;
         const expenseItemLines = (watchedExpenseItemLines || []) as Array<{
-            debtMemberSplitsExpenseItemLines?: Array<{ userId: number | string }>
+            debtMemberSplitsExpenseItemLines?: Array<{ userId: number }>
         }>;
 
-        const involvedMemberIds = new Set<string>();
+        const involvedMemberIds = new Set<number>();
         if (paidByUserId !== undefined && paidByUserId !== null && String(paidByUserId) !== '') {
-            involvedMemberIds.add(String(paidByUserId));
+            involvedMemberIds.add(paidByUserId);
         }
-        debtMemberSplits.forEach((split) => involvedMemberIds.add(String(split.userId)));
+        debtMemberSplits.forEach((split) => involvedMemberIds.add(split.userId));
         expenseItemLines.forEach((line) => {
             (line.debtMemberSplitsExpenseItemLines || []).forEach((split) => {
-                involvedMemberIds.add(String(split.userId));
+                involvedMemberIds.add(split.userId);
             });
         });
 
         return groupMembersByGroup
-            .filter((member) => member.isActive || involvedMemberIds.has(String(member.userId)))
+            .filter((member) => member.isActive || involvedMemberIds.has(member.userId))
             .map((member) => ({
                 ...member.user,
-                id: String(member.userId),
+                id: member.userId,
                 isActive: member.isActive
             }));
     }, [
@@ -224,64 +222,52 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
         if (!isShared || availableMembers.length === 0 || isViewOnly) return;
         if (splitType === 'EQUAL') {
             if (getValues('debtMemberSplits')?.length === 0) {
-                setValue('debtMemberSplits', availableMembers. map(m => ({ userId: String(m.id) })));
+                setValue('debtMemberSplits', availableMembers. map(m => ({ userId: Number(m.id) })));
             }
             else {
                 const validIds = new Set(availableMembers.map(m => String(m.id)));
                 const currentSplits = getValues('debtMemberSplits') || [];
-                const filtered = currentSplits.filter((s: { userId: string }) => validIds.has(String(s.userId)));
+                const filtered = currentSplits.filter((s: { userId: string | number }) => validIds.has(String(s.userId)));
                 setValue('debtMemberSplits', filtered);
             }
         } else {
             const validIds = new Set(availableMembers.map(m => String(m.id)));
             const currentSplits = getValues('debtMemberSplits') || [];
-            const filtered = currentSplits.filter((s: { userId: string }) => validIds.has(String(s.userId)));
+            const filtered = currentSplits.filter((s: { userId: string | number }) => validIds.has(String(s.userId)));
             setValue('debtMemberSplits', filtered);
         }
     }, [isShared, availableMembers, splitType, setValue, getValues, isViewOnly]);
 
     const onSubmit = async (value: FormState) => {
         if (isViewOnly) return;
-        let currentGroupMembers: string[] = [];
-        if (value.groupId && groups) {
-            const g = groups.find(grp => grp.id === value.groupId);
-            if (g && g.groupMembers) {
-                currentGroupMembers = g.groupMembers.map(m => m.id);
-            }
-        } else if (allUsers) {
-            currentGroupMembers = allUsers.map(u => u.id);
-        }
-
         const validMemberIds = new Set(availableMembers.map(m => String(m.id)));
         const filteredDebtSplits = (value.debtMemberSplits || []).filter(
-            (s: { userId: string }) => validMemberIds.has(String(s.userId))
+            (s: { userId: string | number }) => validMemberIds.has(String(s.userId))
         );
 
         const expenseItemLines = (value.expenseItemLines || []).map((expenseItemLine: ExpenseItemLine) => {
             return {
                 ...expenseItemLine,
                 debtMemberSplitsExpenseItemLines: expenseItemLine.debtMemberSplitsExpenseItemLines?.filter(
-                    (s: { userId: string }) => validMemberIds.has(String(s.userId))
+                    (s: { userId: string | number }) => validMemberIds.has(String(s.userId))
                 )
             }
         })
         const payload = {
             ...value,
-            expenseDate: value.expenseDate.toISOString(),
-            groupMembers: currentGroupMembers,
+            expenseDate: value.expenseDate,
             debtMemberSplits: filteredDebtSplits,
             expenseItemLines: expenseItemLines,
-            paidByUserId: value.paidByUserId === '' ? null : value.paidByUserId,
-            expenseCategoryId: value.expenseCategoryId == -1 ? null : Number(value.expenseCategoryId),
+            paidByUserId: (!value.paidByUserId || value.paidByUserId === '') ? undefined : Number(value.paidByUserId),
+            expenseCategoryId: (!value.expenseCategoryId || value.expenseCategoryId == -1) ? undefined : Number(value.expenseCategoryId),
         };
         console.log(payload, "payload", value.debtMemberSplits, "value.debtMemberSplits")
         try {
             let id = expenseId
             if (expenseId) {
-                await updateExpense.mutateAsync({ id: expenseId, dto: payload, groupMembers: payload.groupMembers });
+                await updateExpense.mutateAsync({ id: Number(expenseId), dto: payload as UpdateExpenseDto });
             } else {
-                // @ts-ignore
-                const expense = await createExpense.mutateAsync(payload);
+                const expense = await createExpense.mutateAsync(payload as CreateExpenseDto);
                 id = expense.id;
             }
             onSuccess?.();
@@ -511,7 +497,7 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
                                                             <EqualSplit
                                                                 amount={amount}
                                                                 members={availableMembers}
-                                                                selectedMemberIds={(field.value || []).map((d: { userId : string }) => Number(d.userId))}
+                                                                selectedMemberIds={(field.value || []).map((d: { userId : string | number }) => Number(d.userId))}
                                                                 onChange={(ids) => field.onChange(ids.map(id => ({ userId: id })))}
                                                                 isReadOnly={isViewOnly}
                                                             />

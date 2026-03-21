@@ -9,22 +9,22 @@ import { ExpenseView } from '../components/Expense/ExpenseView';
 import EditMenuOption from '../components/UI/Menu/MenuOptions/EditMenuOption';
 
 export function ExpenseViewPage() {
-    const { expenseId } = useParams();
+    const expenseId= Number(useParams().expenseId);
     const navigate = useNavigate();
-    const editabilityQuery = useExpenseEditability(expenseId || '');
-    const notEditable = editabilityQuery.data?.editable === false;
-    const notEditableMessage = editabilityQuery.data?.message;
+    const { data } = expenseId ? useExpenseEditability(expenseId) : {data : undefined };
+    const notEditable = data?.editable === false;
+    const notEditableMessage = data?.message;
 
     const handleDelete = () => {
         if (expenseId) {
-            deleteExpense.mutate(expenseId.toString());
+            deleteExpense.mutate(expenseId);
             navigate(-1);
         }
     };
     const deleteExpense = useDeleteExpense();
 
     const renderMenu = () => {
-        return (<MenuContainer id={expenseId || ''} compact={true} size={'large'}>
+        return (<MenuContainer id={expenseId} compact={true} size={'large'}>
             <EditMenuOption onClick={(e) => {
                 e.stopPropagation();
                 navigate(`/expenses/edit/${expenseId}`);
@@ -59,7 +59,7 @@ export function ExpenseViewPage() {
                 ) : null}
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
                     <ExpenseView
-                        expenseId={expenseId || ''}
+                        expenseId={expenseId}
                         onClose={() => navigate(-1)}
                     />
                 </div>
