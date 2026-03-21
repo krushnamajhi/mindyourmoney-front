@@ -46,8 +46,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                             <Wallet className="text-white" size={24} />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none">ExpenseTracker</h1>
-                            <span className="text-xs text-slate-500 font-medium tracking-wide">PREMIUM PLAN</span>
+                            <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-none">MindYourMoney</h1>
+                            {/* <span className="text-xs text-slate-500 font-medium tracking-wide">PREMIUM PLAN</span> */}
                         </div>
                     </div>
                     {/* Close Button - Mobile (X) and Desktop (PanelLeftClose) */}

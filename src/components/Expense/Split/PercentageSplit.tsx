@@ -2,25 +2,27 @@
 import type { User, DebtMemberSplits } from '../../../domain/models';
 import { cn } from '../../../utils/cn';
 
+type UserWithActive = User & { isActive?: boolean };
+
 interface PercentageSplitProps {
     amount: number;
-    members: User[];
+    members: UserWithActive[];
     definitions: DebtMemberSplits[];
     onChange: (definitions: DebtMemberSplits[]) => void;
     isReadOnly?: boolean;
 }
 
 export function PercentageSplit({ amount, members, definitions, onChange, isReadOnly = false }: PercentageSplitProps) {
-    const handlePercentageChange = (userId: string, percentage: number) => {
+    const handlePercentageChange = (userId: number, percentage: number) => {
         if (isReadOnly) return;
-        const otherDefs = definitions.filter(d => d.userId !== userId);
+        const otherDefs = definitions.filter(d =>d.userId !== userId);
         onChange([...otherDefs, { userId, percent: percentage, amount: (amount * percentage) / 100 }]);
     };
 
     const totalPercentage = definitions.reduce((sum, def) => sum + (def.percent || 0), 0);
     const isValid = Math.abs(totalPercentage - 100) < 0.01;
 
-    const getPercentage = (userId: string) => {
+    const getPercentage = (userId: number) => {
         return definitions.find(d => d.userId === userId)?.percent || 0;
     };
 
@@ -51,7 +53,9 @@ export function PercentageSplit({ amount, members, definitions, onChange, isRead
                                 {member.firstName?.charAt(0).toUpperCase() || member.email.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-slate-700 truncate">{member.fullName || member.email}</p>
+                                <p className="text-sm font-bold text-slate-700 truncate">
+                                    {member.fullName || member.email} {isReadOnly && member.isActive === false && "(Inactive)"}
+                                </p>
                                 <div className="w-20 text-left text-xs text-slate-500">
                                     ${shareAmount.toFixed(2)}
                                 </div>

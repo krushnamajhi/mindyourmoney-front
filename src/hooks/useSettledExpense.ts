@@ -3,7 +3,7 @@ import { ExpenseService } from '../services/ExpenseService';
 import type { SettleExpenseDto } from '../domain/models';
 import { retryService } from '../utils/common';
 
-export function useSettledExpense(id: string) {
+export function useSettledExpense(id?: number) {
     return useQuery({
         queryKey: ['expenses', 'settled', id],
         queryFn: () => ExpenseService.getSettledExpenseDetailsById(id),
@@ -36,7 +36,7 @@ export function useUpdateSettledExpense() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, dto }: { id: string; dto: SettleExpenseDto }) =>
+        mutationFn: ({ id, dto }: { id: number; dto: SettleExpenseDto }) =>
             ExpenseService.updateSettledExpense(id, dto),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['expenses', 'settled'] });
@@ -49,7 +49,7 @@ export function useDeleteSettledExpense() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (id: string) => ExpenseService.deleteExpense(id),
+        mutationFn: (id: number) => ExpenseService.deleteExpense(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['expenses', 'settled'] });
         },

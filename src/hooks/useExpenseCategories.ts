@@ -8,7 +8,7 @@ export function useExpenseCategories() {
     });
 }
 
-export function useExpenseCategory(id: string) {
+export function useExpenseCategory(id: number) {
     return useQuery({
         queryKey: ['expense-categories', id],
         queryFn: async () => await ExpenseCategoryService.getCategoryById(id),
@@ -30,7 +30,7 @@ export function useCreateExpenseCategory() {
 export function useUpdateExpenseCategory() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, updates }: { id: string, updates: { name?: string; description?: string } }) =>
+        mutationFn: ({ id, updates }: { id: number, updates: { name?: string; description?: string } }) =>
             ExpenseCategoryService.updateCategory(id, updates),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['expense-categories'] });
@@ -42,7 +42,7 @@ export function useUpdateExpenseCategory() {
 export function useDeleteExpenseCategory() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (id: string) => ExpenseCategoryService.deleteCategory(id),
+        mutationFn: (id: number) => ExpenseCategoryService.deleteCategory(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['expense-categories'] });
         },

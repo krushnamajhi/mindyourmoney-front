@@ -12,11 +12,11 @@ import { useFormErrorsUI } from '../hooks/UI/useFormErrorsUI';
 
 export function GroupSettingsPage() {
     const { user: currentUser } = useAuth();
-    const { groupId } = useParams<{ groupId: string }>();
+    const groupId = Number(useParams<{ groupId: string }>().groupId);
     const navigate = useNavigate();
     const { data: group, isLoading, error } = useGroup(groupId!);
     const { data: allUsers } = useUsers();
-    const { setFormErrors, renderError } = useFormErrorsUI();
+    const { setFormErrors, renderError, addErrorMessage } = useFormErrorsUI();
 
     const updateGroup = useUpdateGroup();
     const addMember = useAddMember();
@@ -56,7 +56,7 @@ export function GroupSettingsPage() {
     }
 
     const members = group.groupMembers.map(gm => gm.user).filter(Boolean);
-    const currentUserId = currentUser?.id || '';
+    const currentUserId = currentUser?.id;
 
     const handleSaveName = async () => {
         if (!editedName.trim()) return;
@@ -77,18 +77,18 @@ export function GroupSettingsPage() {
         }
     };
 
-    const handleAddMember = async (userId: string) => {
+    const handleAddMember = async (userId: number) => {
         try {
-            await addMember.mutateAsync({ groupId: group.id, userId });
+            await addMember.mutateAsync({ groupId: group.id, userId: userId}); 
             setIsAddingMember(false);
         } catch (err) {
             console.error('Failed to add member:', err);
         }
     };
 
-    const handleRemoveMember = async (userId: string) => {
+    const handleRemoveMember = async (userId: number) => {
         try {
-            await removeMember.mutateAsync({ groupId: group.id, userId });
+            await removeMember.mutateAsync({ groupId: group.id, userId: userId });
         } catch (err: any) {
             setFormErrors(err);
             console.error('Failed to remove member:', err);
@@ -97,7 +97,12 @@ export function GroupSettingsPage() {
 
     const handleLeaveGroup = async () => {
         try {
-            await leaveGroup.mutateAsync({ groupId: group.id, userId: currentUserId });
+            if(!currentUserId) {
+                addErrorMessage("Current User is valid" + currentUser)
+            }
+            else{
+                await leaveGroup.mutateAsync({ groupId: group.id, userId: currentUserId });
+            }
         } catch (err: any) {
             setShowLeaveConfirm(false);
             setFormErrors(err);

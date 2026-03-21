@@ -1,7 +1,7 @@
 import { useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { DollarSign, Euro, IndianRupee, JapaneseYen, Handshake } from 'lucide-react';
-import { useGroups } from '../../hooks/useGroups';
+import { useGroupMembersByGroup, useGroups } from '../../hooks/useGroups';
 import { useUsers } from '../../hooks/useUsers';
 import { cn } from '../../utils/cn';
 import { Loader } from '../UI/Loader';
@@ -19,7 +19,7 @@ import type { SettleExpenseDto } from '../../domain/models';
 type SettleFormState = SettleExpenseDto;
 
 interface ExpenseSettleFormProps {
-    expenseId?: string | null | undefined;
+    expenseId?: number | undefined;
     passedData?: SettleExpenseDto;
     onSuccess?: () => void;
     onCancel?: () => void;
@@ -30,14 +30,13 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
     const { user: currentUser } = useAuth();
     const { data: groups } = useGroups();
     const { data: allUsers } = useUsers();
-    const { data: existingExpense, isLoading, error } = useSettledExpense(expenseId || '');
+    const { data: existingExpense, isLoading, error } = useSettledExpense(expenseId);
     const createSettle = useCreateSettledExpense();
     const updateSettle = useUpdateSettledExpense();
     const isPending = createSettle.isPending || updateSettle.isPending;
     const { setFormErrors, renderError } = useFormErrorsUI();
     const { currency } = useSettings();
     const navigate = useNavigate();
-    console.log(passedData, isViewOnly);
     // --- Default Values ---
     const defaultFormValues: SettleFormState = useMemo(() => {
         if (expenseId && existingExpense) {
@@ -69,7 +68,6 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
 
     // Sync form when data loads
     useEffect(() => {
-        console.log(passedData, 'passedData', expenseId, existingExpense);
         if (existingExpense || passedData) {
             const values = defaultFormValues;
             (Object.keys(values) as Array<keyof SettleFormState>).forEach((key) => {
@@ -80,14 +78,39 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
 
     const selectedGroupId = watch('groupId');
     const paidByUserId = watch('paidByUserId');
+    const settledMemberId = watch('settledMemberId');
+
+    const { data: groupMembersByGroup } = useGroupMembersByGroup(
+        selectedGroupId
+    );
 
     // Derive available members from group or all users
     const availableMembers = useMemo(() => {
         if (!selectedGroupId || !groups) return allUsers || [];
         const group = groups.find(g => Number(g.id) == selectedGroupId);
         if (!group) return allUsers || [];
-        return group.groupMembers || [];
-    }, [selectedGroupId, groups, allUsers]);
+        const activeMembers = group.groupMembers || [];
+
+        if (!isViewOnly || !groupMembersByGroup || groupMembersByGroup.length === 0) {
+            return activeMembers;
+        }
+
+        const involvedMemberIds = new Set<string>();
+        if (paidByUserId !== undefined && paidByUserId !== null && String(paidByUserId) !== '') {
+            involvedMemberIds.add(String(paidByUserId));
+        }
+        if (settledMemberId !== undefined && settledMemberId !== null && String(settledMemberId) !== '') {
+            involvedMemberIds.add(String(settledMemberId));
+        }
+
+        return groupMembersByGroup
+            .filter((member) => member.isActive || involvedMemberIds.has(String(member.userId)))
+            .map((member) => ({
+                ...member.user,
+                id: String(member.userId),
+                isActive: member.isActive
+            }));
+    }, [selectedGroupId, groups, allUsers, isViewOnly, groupMembersByGroup, paidByUserId, settledMemberId]);
 
     // Filter out the payer from the settled member list
     const settleableMembers = useMemo(() => {
@@ -198,7 +221,7 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
                                 viewMode: isViewOnly,
                                 dataType: 'string',
                                 options: availableMembers?.map(u => ({
-                                    label: currentUser?.id === u.id ? `${u.fullName || 'User'} (You)` : (u.fullName || u.email),
+                                    label: `${currentUser?.id === u.id ? `${u.fullName || 'User'} (You)` : (u.fullName || u.email)}${isViewOnly && (u as any).isActive === false ? ' (Inactive)' : ''}`,
                                     value: String(u.id)
                                 })) || [],
                                 placeholder: 'Who paid?',
@@ -215,7 +238,7 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
                                 viewMode: isViewOnly,
                                 dataType: 'string',
                                 options: settleableMembers?.map(u => ({
-                                    label: currentUser?.id === u.id ? `${u.fullName || 'User'} (You)` : (u.fullName || u.email),
+                                    label: `${currentUser?.id === u.id ? `${u.fullName || 'User'} (You)` : (u.fullName || u.email)}${isViewOnly && (u as any).isActive === false ? ' (Inactive)' : ''}`,
                                     value: String(u.id)
                                 })) || [],
                                 placeholder: 'Who received?',
@@ -242,7 +265,7 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
                         type="submit"
                         form="settle-form"
                         disabled={isPending}
-                        className="flex-[2] flex items-center justify-center space-x-2 py-4 bg-emerald-700 hover:bg-emerald-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-emerald-500/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="flex-2 flex items-center justify-center space-x-2 py-4 bg-emerald-700 hover:bg-emerald-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-emerald-500/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                         {isSubmitting || isPending ? (
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

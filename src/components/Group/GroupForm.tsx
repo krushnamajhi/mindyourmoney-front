@@ -27,7 +27,7 @@ export function GroupForm() {
     useEffect(() => {
         if (currentUser) {
             if (selectedMemberIds.length === 0) {
-                setSelectedMemberIds([currentUser.id]);
+                setSelectedMemberIds([String(currentUser.id)]);
             }
         }
     }, [])
@@ -46,13 +46,13 @@ export function GroupForm() {
         }
     };
 
-    const toggleMember = (userId: string) => {
-        console.log("selectedMemberIds", selectedMemberIds);
-        if (selectedMemberIds.includes(userId)) {
-            if (currentUser && userId === currentUser.id) return;
-            setSelectedMemberIds(prev => prev.filter(id => id !== userId));
+    const toggleMember = (userId: string | number) => {
+        const normalizedUserId = String(userId);
+        if (selectedMemberIds.includes(normalizedUserId)) {
+            if (currentUser && normalizedUserId === String(currentUser.id)) return;
+            setSelectedMemberIds(prev => prev.filter(id => id !== normalizedUserId));
         } else {
-            setSelectedMemberIds(prev => [...prev, userId]);
+            setSelectedMemberIds(prev => [...prev, normalizedUserId]);
         }
     };
 
@@ -119,7 +119,7 @@ export function GroupForm() {
                                     </div>
                                 ) : (
                                     filteredUsers.map(user => {
-                                        const isSelected = selectedMemberIds.includes(user.id);
+                                        const isSelected = selectedMemberIds.includes(String(user.id));
                                         return <GroupMember key={user.id} user={user} isSelected={isSelected} toggleMember={toggleMember} />
                                     })
                                 )}

@@ -33,7 +33,7 @@ function MenuContent({ children }: { children: React.ReactNode }) {
     );
 }
 
-export default function MenuContainer({ children, compact = false, size = 'medium', id }: { children: React.ReactNode, compact?: boolean, size?: MenuSize, id: string }) {
+export default function MenuContainer({ children, compact = false, size = 'medium', id }: { children: React.ReactNode, compact?: boolean, size?: MenuSize, id: number }) {
     return (
         <MenuProvider isCompact={compact} menuSize={size} id={id}>
             <MenuContent>

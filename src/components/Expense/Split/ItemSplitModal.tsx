@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save } from 'lucide-react';
-import type { User, SplitType, DebtMemberSplitExpenseItemLine, ExpenseItemLine } from '../../../domain/models';
+import type { User, SplitType, DebtMemberSplitExpenseItemLine, ExpenseItemLine, DebtMemberSplits } from '../../../domain/models';
 import { EqualSplit } from './EqualSplit';
 import { PercentageSplit } from './PercentageSplit';
 import { SharesSplit } from './SharesSplit';
@@ -9,10 +9,12 @@ import { UnequalSplit } from './UnequalSplit';
 import { SplitTypeDropdown, splitTypeOptions } from '../../UI/SplitTypeDropdown';
 // import { cn } from '../../../utils/cn';
 
+type UserWithActive = User & { isActive?: boolean };
+
 interface ItemSplitModalProps {
     isOpen: boolean;
     onClose: () => void;
-    members: User[];
+    members: UserWithActive[];
     initialSplitType: SplitType;
     item: ExpenseItemLine;
     onSave: (splitType: SplitType, definitions: DebtMemberSplitExpenseItemLine[]) => void;
@@ -30,18 +32,15 @@ export function ItemSplitModal({
 }: ItemSplitModalProps) {
     const [splitType, setSplitType] = useState<SplitType>(initialSplitType);
     const [definitions, setDefinitions] = useState<DebtMemberSplitExpenseItemLine[]>(item.debtMemberSplitsExpenseItemLines || []);
-    const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(
-        item.debtMemberSplitsExpenseItemLines?.map(d => d.userId) || []
-    );
+    const [selectedMemberIds, setSelectedMemberIds] = useState<DebtMemberSplitExpenseItemLine[]>(item.debtMemberSplitsExpenseItemLines || []);
 
     // Reset state when modal opens
     useEffect(() => {
         if (isOpen) {
             setSplitType(initialSplitType);
             setDefinitions(item.debtMemberSplitsExpenseItemLines || []);
-            setSelectedMemberIds(item.debtMemberSplitsExpenseItemLines?.map(d => d.userId) || []);
+            setSelectedMemberIds(item.debtMemberSplitsExpenseItemLines || []);
         }
-        console.log(isReadOnly)
     }, [isOpen, initialSplitType, item.debtMemberSplitsExpenseItemLines]);
 
     // Handle Split Type Change - reset definitions smartly
@@ -55,7 +54,7 @@ export function ItemSplitModal({
             // For others, we might want to start fresh or convert
             // For now, let's reset values but keep members if possible?
             // Simplest: Reset to empty definitions for clarity, OR default to equal shares
-            setDefinitions(selectedMemberIds.map(id => ({ userId: id })));
+            setDefinitions(selectedMemberIds);
         }
     };
 
@@ -83,7 +82,6 @@ export function ItemSplitModal({
         <div 
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => {
-                console.log('DEBUG: ItemSplitModal backdrop clicked');
                 onClose();
             }}
         >
@@ -99,7 +97,6 @@ export function ItemSplitModal({
                     <button 
                         type="button"
                         onClick={() => {
-                            console.log('DEBUG: ItemSplitModal X button clicked');
                             onClose();
                         }} 
                         className="p-2 text-slate-400 hover:text-slate-600 rounded-xl transition-all"
@@ -116,7 +113,7 @@ export function ItemSplitModal({
                         disabled={isReadOnly}
                     />
 
-                    <div className="min-h-[200px]">
+                    <div className="min-h-50">
                         {splitType === 'EQUAL' && (
                             <EqualSplit
                                 amount={item.amount}
@@ -126,7 +123,7 @@ export function ItemSplitModal({
                                     setSelectedMemberIds(ids);
                                     // Definitions for EQUAL are just member IDs effectively,
                                     // but we store them as definitions for consistency
-                                    setDefinitions(ids.map(id => ({ userId: id })));
+                                    setDefinitions(ids);
                                 }}
                                 isReadOnly={isReadOnly}
                             />
@@ -166,7 +163,6 @@ export function ItemSplitModal({
                         <button
                             type="button"
                             onClick={() => {
-                                console.log('DEBUG: ItemSplitModal footer Close button clicked');
                                 onClose();
                             }}
                             className="w-full py-3 bg-primary-900 text-white rounded-xl font-bold text-sm shadow-lg shadow-primary-500/20 hover:bg-primary-800 transition-all flex items-center justify-center space-x-2"
@@ -179,7 +175,6 @@ export function ItemSplitModal({
                             <button
                                 type="button"
                                 onClick={() => {
-                                    console.log('DEBUG: ItemSplitModal footer Cancel button clicked');
                                     onClose();
                                 }}
                                 className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all"
@@ -189,7 +184,6 @@ export function ItemSplitModal({
                             <button
                                 type="button"
                                 onClick={() => {
-                                    console.log('DEBUG: ItemSplitModal footer Save button clicked');
                                     handleSave();
                                 }}
                                 className="px-8 py-3 bg-primary-900 text-white rounded-xl font-bold text-sm shadow-lg shadow-primary-500/20 hover:bg-primary-800 transition-all flex items-center space-x-2"

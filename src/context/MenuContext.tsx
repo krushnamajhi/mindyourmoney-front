@@ -10,12 +10,12 @@ interface MenuContextType {
     setCompact: (compact: boolean) => void;
     size: MenuSize;
     setSize: (size: MenuSize) => void;
-    menuId: string;
+    menuId: number;
 }
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
-export function MenuProvider({ children, isCompact = false, menuSize = 'medium', id }: { children: React.ReactNode, isOpen?: boolean, isCompact?: boolean, menuSize?: MenuSize, id: string }) {
+export function MenuProvider({ children, isCompact = false, menuSize = 'medium', id }: { children: React.ReactNode, isOpen?: boolean, isCompact?: boolean, menuSize?: MenuSize, id: number }) {
     const [open, setOpen] = useState<boolean>(isCompact ? true : false);
     const [compact, setCompact] = useState<boolean>(isCompact);
     const [size, setSize] = useState<MenuSize>(menuSize);

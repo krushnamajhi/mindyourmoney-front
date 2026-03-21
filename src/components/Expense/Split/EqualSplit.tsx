@@ -1,26 +1,32 @@
 // useEffect removed - unused
 import { Check } from 'lucide-react';
-import type { User } from '../../../domain/models';
+import type { DebtMemberSplits, User } from '../../../domain/models';
 import { cn } from '../../../utils/cn';
 import { useAuth } from '../../../context/AuthContext';
 
+type UserWithActive = User & { isActive?: boolean };
+
 interface EqualSplitProps {
     amount: number;
-    members: User[];
-    selectedMemberIds: string[];
-    onChange: (memberIds: string[]) => void;
+    members: UserWithActive[];
+    selectedMemberIds: DebtMemberSplits[];
+    onChange: (memberIds: DebtMemberSplits[]) => void;
     isReadOnly?: boolean;
 }
 
 export function EqualSplit({ amount, members, selectedMemberIds, onChange, isReadOnly = false }: EqualSplitProps) {
     const { user: currentUser } = useAuth();
 
-    const toggleMember = (id: string) => {
+    const isSelectedMember = (id: number) => {
+        return selectedMemberIds.find(m => m.userId === id)
+    }
+    const toggleMember = (id: number) => {
         if (isReadOnly) return;
-        if (selectedMemberIds.includes(id)) {
-            onChange(selectedMemberIds.filter(m => m !== id));
+        const defs : DebtMemberSplits = {userId : id};
+        if (isSelectedMember(id)) {
+            onChange(selectedMemberIds.filter(m => m.userId !== id).map(m => m));
         } else {
-            onChange([...selectedMemberIds, id]);
+            onChange([...selectedMemberIds, defs]);
         }
     };
 
@@ -41,7 +47,7 @@ export function EqualSplit({ amount, members, selectedMemberIds, onChange, isRea
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {members.map(member => {
-                    const isSelected = selectedMemberIds.includes(member.id);
+                    const isSelected = isSelectedMember(member.id);
                     return (
                         <button
                             key={member.id}
@@ -65,7 +71,7 @@ export function EqualSplit({ amount, members, selectedMemberIds, onChange, isRea
                                     "text-sm font-medium",
                                     isSelected ? "text-primary-900" : "text-slate-600"
                                 )}>
-                                    {member.fullName || member.email} {currentUser?.id == member.id && "(You)"}
+                                    {member.fullName || member.email} {currentUser?.id == member.id && "(You)"} {isReadOnly && member.isActive === false && "(Inactive)"}
                                 </span>
                             </div>
                             {isSelected && (

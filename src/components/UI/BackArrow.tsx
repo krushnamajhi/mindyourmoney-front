@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 
 export default function BackArrow({ navigation }: { navigation?: string }) {
     const navigate = useNavigate();
-    console.log(navigation)
     return (
         <button
             onClick={() => navigation ? navigate(navigation) : navigate(-1)}

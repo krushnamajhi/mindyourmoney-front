@@ -51,7 +51,7 @@ export function ExpenseCategoriesPage() {
         setViewingCategory(category);
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (id: number) => {
         await deleteMutation.mutateAsync(id);
         setViewingCategory(null);
     };

@@ -2,7 +2,7 @@ import { Check } from "lucide-react";
 import { clsx } from "clsx";
 import type { User } from "../../domain/models";
 
-export function GroupMember({ user, isSelected, toggleMember }: { user: User, isSelected: boolean, toggleMember: (userId: string) => void }) {
+export function GroupMember({ user, isSelected, toggleMember }: { user: User, isSelected: boolean, toggleMember: (userId: string | number) => void }) {
     return (
         <div
             onClick={() => toggleMember(user.id)}

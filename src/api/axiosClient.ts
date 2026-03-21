@@ -3,8 +3,22 @@ import type { APIError } from '../lib/ErrorTypes';
 
 const TOKEN_KEY = 'auth_token';
 
+const normalizeBaseUrl = (url: string): string => {
+    if (!url) return url;
+    return url.endsWith('/') ? url.slice(0, -1) : url;
+};
+
+const getDefaultApiUrl = (): string => {
+    // Match backend default host/port in local setups without hardcoding LAN IPs.
+    if (typeof window !== 'undefined' && window.location?.hostname) {
+        const protocol = window.location.protocol || 'http:';
+        return `${protocol}//${window.location.hostname}:3000`;
+    }
+    return 'http://localhost:3000';
+};
+
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://192.168.1.12:3000/', // Default or env
+    baseURL: normalizeBaseUrl(import.meta.env.VITE_API_URL || getDefaultApiUrl()),
     headers: {
         'Content-Type': 'application/json',
     },

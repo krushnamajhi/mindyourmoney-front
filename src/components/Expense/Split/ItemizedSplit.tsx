@@ -4,9 +4,11 @@ import type { User, ExpenseItemLine, } from '../../../domain/models';
 import { ItemSplitModal } from './ItemSplitModal';
 import { cn } from '../../../utils/cn';
 
+type UserWithActive = User & { isActive?: boolean };
+
 interface ItemizedSplitProps {
     items: ExpenseItemLine[];
-    members: User[];
+    members: UserWithActive[];
     onChange: (items: ExpenseItemLine[]) => void;
     isReadOnly?: boolean;
 }
@@ -136,7 +138,6 @@ export function ItemizedSplit({ items, members, onChange, isReadOnly = false }: 
                 <ItemSplitModal
                     isOpen={true}
                     onClose={() => { 
-                        console.log('DEBUG: ItemizedSplit onClose called');
                         setEditingItemIndex(null);
                     }}
                     members={members}

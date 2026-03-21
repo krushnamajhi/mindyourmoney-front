@@ -2,7 +2,7 @@ import type { DebtMemberSplitExpenseItemLine, DebtMemberSplits } from '../models
 import type { SplitStrategy, SplitResult } from './SplitStrategy';
 
 export class PercentageSplitStrategy implements SplitStrategy {
-    calculateSplits(totalAmount: number, _members: string[], definitions: DebtMemberSplits[] | DebtMemberSplitExpenseItemLine[]): SplitResult[] {
+    calculateSplits(totalAmount: number, _members: Array<string | number>, definitions: DebtMemberSplits[] | DebtMemberSplitExpenseItemLine[]): SplitResult[] {
         // Sort to handle remainder distribution logic if needed, but for now simple calc
         const results = definitions.map(def => {
             const percentage = def.percent || 0;

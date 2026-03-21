@@ -11,7 +11,7 @@ export class ExpenseCategoryService {
     }
 
     // Get category by ID
-    static async getCategoryById(id: string): Promise<ExpenseCategoryModel> {
+    static async getCategoryById(id: number): Promise<ExpenseCategoryModel> {
         const response = await apiClient.get(`${this.URL}/${id}`);
         return response.data;
     }
@@ -23,13 +23,13 @@ export class ExpenseCategoryService {
     }
 
     // Update an existing category
-    static async updateCategory(id: string, data: { name?: string; description?: string }): Promise<ExpenseCategoryModel> {
+    static async updateCategory(id: number, data: { name?: string; description?: string }): Promise<ExpenseCategoryModel> {
         const response = await apiClient.put(`${this.URL}/${id}`, data);
         return response.data;
     }
 
     // Delete a category
-    static async deleteCategory(id: string): Promise<void> {
+    static async deleteCategory(id: number): Promise<void> {
         await apiClient.delete(`${this.URL}/${id}`);
     }
 }
