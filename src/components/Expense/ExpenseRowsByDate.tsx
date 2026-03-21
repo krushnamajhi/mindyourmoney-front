@@ -101,6 +101,7 @@ export function ExpenseRowsByDate({
         if (!row) return null;
 
         return (
+            <div key= {row.key}>
             <VirtualizedRow
                 row={row}
                 virtualRow={virtualRow}
@@ -111,6 +112,7 @@ export function ExpenseRowsByDate({
                 hideGroupTag={hideGroupTag}
                 compact={compact}
             />
+            </div>
         );
     }, [visibleRows, rowVirtualizer, onExpenseClick, formatCurrency, loggedInUserId, hideGroupTag, compact]);
 
@@ -176,15 +178,17 @@ const VirtualizedRow = memo(function VirtualizedRow({
             }}
         >
             {row.kind === 'month' && (
+                <div key={row.kind + row.label}>
                 <HeaderRow
                     label={row.label}
                     count={row.count}
                     className="border-b border-slate-200 bg-slate-50 px-2 py-1 text-slate-800"
                 />
+                </div>
             )}
 
             {row.kind === 'expense' && (
-                <div className={compact ? 'border-b border-slate-100 px-1' : 'border-b border-slate-100 px-1.5'}>
+                <div key={row.expense.id} className={compact ? 'border-b border-slate-100 px-1' : 'border-b border-slate-100 px-1.5'}>
                     <ExpenseItemRow
                         expense={row.expense}
                         onClick={onExpenseClick}

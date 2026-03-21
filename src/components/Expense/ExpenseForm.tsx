@@ -162,7 +162,7 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const { data: groupMembersByGroup } = selectedGroupId ? useGroupMembersByGroup(selectedGroupId) : {data: null};
+    const { data: groupMembersByGroup } = useGroupMembersByGroup(selectedGroupId)
 
     useEffect(() => {
         if(selectedGroupId != expense?.groupId)

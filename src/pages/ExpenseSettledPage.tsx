@@ -51,16 +51,17 @@ export function ExpenseSettledPage() {
     if(mode === 'new'){
         editabilityQuery = undefined;
         notEditable = false;
-    }
+    }   
     else {
         if(id){
             editabilityQuery = useExpenseEditability(id)
-            notEditable = editabilityQuery.data?.editable;
+            notEditable = !editabilityQuery.data?.editable;
             notEditableMessage = editabilityQuery.data?.message;
         }
     }
-    const apiError = editabilityQuery.error as APIError | undefined;
+    const apiError = editabilityQuery?.error as APIError | undefined;
     const editabilityErrorMessage = apiError?.errors?.[0] || apiError?.message || 'Failed to check if settlement is editable.';
+    console.log(editabilityQuery.data, id, "settle", apiError, editabilityErrorMessage, notEditable)
 
 
     const deleteExpense = useDeleteSettledExpense();
