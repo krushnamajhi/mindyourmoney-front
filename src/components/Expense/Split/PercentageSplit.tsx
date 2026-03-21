@@ -13,7 +13,7 @@ interface PercentageSplitProps {
 }
 
 export function PercentageSplit({ amount, members, definitions, onChange, isReadOnly = false }: PercentageSplitProps) {
-    const handlePercentageChange = (userId: number | number, percentage: number) => {
+    const handlePercentageChange = (userId: number, percentage: number) => {
         if (isReadOnly) return;
         const otherDefs = definitions.filter(d =>d.userId !== userId);
         onChange([...otherDefs, { userId, percent: percentage, amount: (amount * percentage) / 100 }]);
@@ -22,8 +22,8 @@ export function PercentageSplit({ amount, members, definitions, onChange, isRead
     const totalPercentage = definitions.reduce((sum, def) => sum + (def.percent || 0), 0);
     const isValid = Math.abs(totalPercentage - 100) < 0.01;
 
-    const getPercentage = (userId: string | number) => {
-        return definitions.find(d => Number(d.userId) === Number(userId))?.percent || 0;
+    const getPercentage = (userId: number) => {
+        return definitions.find(d => d.userId === userId)?.percent || 0;
     };
 
     return (

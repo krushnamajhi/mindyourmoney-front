@@ -4,15 +4,15 @@ import { useUsers } from '../../hooks/useUsers';
 import type { User } from '../../domain/models';
 
 interface MemberSelectionModalProps {
-    initialSelectedIds: string[];
-    onSave: (selectedIds: string[]) => void;
+    initialSelectedIds: number[];
+    onSave: (selectedIds: number[]) => void;
     onCancel: () => void;
     filterGroupMembers?: User[]; // If provided, only show these users
 }
 
 export function MemberSelectionModal({ initialSelectedIds, onSave, onCancel, filterGroupMembers }: MemberSelectionModalProps) {
     const { data: allUsers } = useUsers();
-    const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
+    const [selectedIds, setSelectedIds] = useState<number[]>(initialSelectedIds);
     const [searchQuery, setSearchQuery] = useState('');
 
     const usersToDisplay = useMemo(() => {
@@ -24,7 +24,7 @@ export function MemberSelectionModal({ initialSelectedIds, onSave, onCancel, fil
         );
     }, [allUsers, filterGroupMembers, searchQuery]);
 
-    const toggleUser = (userId: string) => {
+    const toggleUser = (userId: number) => {
         if (selectedIds.includes(userId)) {
             setSelectedIds(prev => prev.filter(id => id !== userId));
         } else {
@@ -65,7 +65,7 @@ export function MemberSelectionModal({ initialSelectedIds, onSave, onCancel, fil
                 <div className="p-2 overflow-y-auto flex-1">
                     <div className="space-y-1">
                         {usersToDisplay.map(user => {
-                            const userId = String(user.id);
+                            const userId = user.id;
                             const isSelected = selectedIds.includes(userId);
                             return (
                                 <button

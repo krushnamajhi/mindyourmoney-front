@@ -267,7 +267,7 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
                         type="submit"
                         form="settle-form"
                         disabled={isPending}
-                        className="flex-[2] flex items-center justify-center space-x-2 py-4 bg-emerald-700 hover:bg-emerald-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-emerald-500/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="flex-2 flex items-center justify-center space-x-2 py-4 bg-emerald-700 hover:bg-emerald-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-emerald-500/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                         {isSubmitting || isPending ? (
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

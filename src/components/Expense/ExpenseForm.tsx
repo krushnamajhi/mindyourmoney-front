@@ -78,16 +78,10 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
     // ... (Memo/Effect code remains same, skipping for brevity but keeping in mind the structure)
     const defaultFormValues: FormState = useMemo(() => {
         if (expenseId && expense) {
-            const normalizedDebtMemberSplits = (expense.debtMemberSplits || []).map((s: any) => ({
-                ...s,
-                userId: s?.userId !== undefined && s?.userId !== null ? s.userId : s.userId
-            }));
-            const normalizedExpenseItemLines = (expense.expenseItemLines || []).map((line: any) => ({
+            const normalizedDebtMemberSplits = (expense.debtMemberSplits || [])
+            const normalizedExpenseItemLines = (expense.expenseItemLines || []).map((line) => ({
                 ...line,
-                debtMemberSplitsExpenseItemLines: (line?.debtMemberSplitsExpenseItemLines || []).map((s: any) => ({
-                    ...s,
-                    userId: s?.userId !== undefined && s?.userId !== null ? String(s.userId) : s.userId
-                }))
+                debtMemberSplitsExpenseItemLines: (line?.debtMemberSplitsExpenseItemLines || [])
             }));
             return {
                 title: expense.title || '',
@@ -336,7 +330,7 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
                                     <Calendar className={cn("h-5 w-5 transition-colors", errors.expenseDate ? "text-red-400" : "text-slate-400 group-focus-within:text-primary-500")} />
                                 </div>
                                 {isViewOnly ? (
-                                    <div className="w-full pl-11 pr-5 text-slate-800 font-bold min-h-[50px] flex items-center">
+                                    <div className="w-full pl-11 pr-5 text-slate-800 font-bold `min-h-12.5 flex items-center">
                                         {expenseDate ? expenseDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'No Date'}
                                     </div>
                                 ) : (
@@ -418,7 +412,7 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
                                     className="sr-only peer"
                                     {...register('isShared')}
                                 />
-                                <div className="w-12 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
+                                <div className="w-12 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
                             </label>
                         )}
                     </div>
@@ -497,8 +491,8 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
                                                             <EqualSplit
                                                                 amount={amount}
                                                                 members={availableMembers}
-                                                                selectedMemberIds={(field.value || []).map((d: { userId : string | number }) => Number(d.userId))}
-                                                                onChange={(ids) => field.onChange(ids.map(id => ({ userId: id })))}
+                                                                selectedMemberIds={(field.value || [])}
+                                                                onChange={field.onChange}
                                                                 isReadOnly={isViewOnly}
                                                             />
                                                         )}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save } from 'lucide-react';
-import type { User, SplitType, DebtMemberSplitExpenseItemLine, ExpenseItemLine } from '../../../domain/models';
+import type { User, SplitType, DebtMemberSplitExpenseItemLine, ExpenseItemLine, DebtMemberSplits } from '../../../domain/models';
 import { EqualSplit } from './EqualSplit';
 import { PercentageSplit } from './PercentageSplit';
 import { SharesSplit } from './SharesSplit';
@@ -32,16 +32,14 @@ export function ItemSplitModal({
 }: ItemSplitModalProps) {
     const [splitType, setSplitType] = useState<SplitType>(initialSplitType);
     const [definitions, setDefinitions] = useState<DebtMemberSplitExpenseItemLine[]>(item.debtMemberSplitsExpenseItemLines || []);
-    const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>(
-        item.debtMemberSplitsExpenseItemLines?.map(d => Number(d.userId)) || []
-    );
+    const [selectedMemberIds, setSelectedMemberIds] = useState<DebtMemberSplitExpenseItemLine[]>(item.debtMemberSplitsExpenseItemLines || []);
 
     // Reset state when modal opens
     useEffect(() => {
         if (isOpen) {
             setSplitType(initialSplitType);
             setDefinitions(item.debtMemberSplitsExpenseItemLines || []);
-            setSelectedMemberIds(item.debtMemberSplitsExpenseItemLines?.map(d => Number(d.userId)) || []);
+            setSelectedMemberIds(item.debtMemberSplitsExpenseItemLines || []);
         }
         console.log(isReadOnly)
     }, [isOpen, initialSplitType, item.debtMemberSplitsExpenseItemLines]);
@@ -57,7 +55,7 @@ export function ItemSplitModal({
             // For others, we might want to start fresh or convert
             // For now, let's reset values but keep members if possible?
             // Simplest: Reset to empty definitions for clarity, OR default to equal shares
-            setDefinitions(selectedMemberIds.map(id => ({ userId: id })));
+            setDefinitions(selectedMemberIds);
         }
     };
 
@@ -118,17 +116,17 @@ export function ItemSplitModal({
                         disabled={isReadOnly}
                     />
 
-                    <div className="min-h-[200px]">
+                    <div className="min-h-50">
                         {splitType === 'EQUAL' && (
                             <EqualSplit
                                 amount={item.amount}
                                 members={members}
                                 selectedMemberIds={selectedMemberIds}
                                 onChange={(ids) => {
-                                    setSelectedMemberIds(ids.map((id) => Number(id)));
+                                    setSelectedMemberIds(ids);
                                     // Definitions for EQUAL are just member IDs effectively,
                                     // but we store them as definitions for consistency
-                                    setDefinitions(ids.map(id => ({ userId: Number(id) })));
+                                    setDefinitions(ids);
                                 }}
                                 isReadOnly={isReadOnly}
                             />

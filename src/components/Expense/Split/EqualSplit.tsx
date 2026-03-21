@@ -1,6 +1,6 @@
 // useEffect removed - unused
 import { Check } from 'lucide-react';
-import type { User } from '../../../domain/models';
+import type { DebtMemberSplits, User } from '../../../domain/models';
 import { cn } from '../../../utils/cn';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -9,27 +9,33 @@ type UserWithActive = User & { isActive?: boolean };
 interface EqualSplitProps {
     amount: number;
     members: UserWithActive[];
-    selectedMemberIds: number[];
-    onChange: (memberIds: string[]) => void;
+    selectedMemberIds: DebtMemberSplits[];
+    onChange: (memberIds: DebtMemberSplits[]) => void;
     isReadOnly?: boolean;
 }
 
 export function EqualSplit({ amount, members, selectedMemberIds, onChange, isReadOnly = false }: EqualSplitProps) {
     const { user: currentUser } = useAuth();
+    console.log(selectedMemberIds)
 
+    const isSelectedMember = (id: number) => {
+        return selectedMemberIds.find(m => m.userId === id)
+    }
     const toggleMember = (id: number) => {
         if (isReadOnly) return;
-        if (selectedMemberIds.includes(id)) {
-            onChange(selectedMemberIds.filter(m => m !== id).map(m => m.toString()));
+        console.log(selectedMemberIds, "equal")
+        const defs : DebtMemberSplits = {userId : id};
+        if (isSelectedMember(id)) {
+            onChange(selectedMemberIds.filter(m => m.userId !== id).map(m => m));
         } else {
-            onChange([...selectedMemberIds.map(m => m.toString()), id.toString()]);
+            onChange([...selectedMemberIds, defs]);
         }
     };
 
     const splitAmount = selectedMemberIds.length > 0
         ? amount / selectedMemberIds.length
         : 0;
-    console.log(selectedMemberIds, members, amount,"equalSplits")
+    // console.log(selectedMemberIds, members, amount,"equalSplits")
 
     return (
         <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -44,12 +50,12 @@ export function EqualSplit({ amount, members, selectedMemberIds, onChange, isRea
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {members.map(member => {
-                    const isSelected = selectedMemberIds.includes(Number(member.id));
+                    const isSelected = isSelectedMember(member.id);
                     return (
                         <button
                             key={member.id}
                             type="button"
-                            onClick={() => toggleMember(Number(member.id))}
+                            onClick={() => toggleMember(member.id)}
                             className={cn(
                                 "flex items-center justify-between p-3 rounded-xl border transition-all duration-200 text-left group",
                                 isSelected
