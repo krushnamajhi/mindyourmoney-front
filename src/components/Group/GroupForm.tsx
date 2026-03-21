@@ -48,7 +48,6 @@ export function GroupForm() {
 
     const toggleMember = (userId: string | number) => {
         const normalizedUserId = String(userId);
-        console.log("selectedMemberIds", selectedMemberIds);
         if (selectedMemberIds.includes(normalizedUserId)) {
             if (currentUser && normalizedUserId === String(currentUser.id)) return;
             setSelectedMemberIds(prev => prev.filter(id => id !== normalizedUserId));

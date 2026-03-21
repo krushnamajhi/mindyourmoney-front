@@ -24,8 +24,6 @@ export class ExpenseService {
     }
 
     static async filterExpenses(filters: ExpenseFilters): Promise<Expense[]> {
-        console.log(filters);
-
         const response = await apiClient.post(this.URL + '/filter', filters);
         return response.data.data.expenses;
     }

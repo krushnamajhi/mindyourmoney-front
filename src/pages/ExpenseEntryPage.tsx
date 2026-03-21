@@ -11,7 +11,6 @@ export function ExpenseEntryPage() {
     const edit = searchParams.get('edit');
     const navigate = useNavigate();
     const isEditMode = !!expenseId && edit === 'true';
-    console.log(expenseId, edit)
 
     // Tabs logic removed, defaulting to standard view
 

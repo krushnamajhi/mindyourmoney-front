@@ -61,7 +61,6 @@ export function ExpenseSettledPage() {
     }
     const apiError = editabilityQuery?.error as APIError | undefined;
     const editabilityErrorMessage = apiError?.errors?.[0] || apiError?.message || 'Failed to check if settlement is editable.';
-    console.log(editabilityQuery.data, id, "settle", apiError, editabilityErrorMessage, notEditable)
 
 
     const deleteExpense = useDeleteSettledExpense();

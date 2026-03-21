@@ -4,7 +4,6 @@ import { BaseSelect } from "../BaseSelect";
 export default function FormSelect({ data }: { data: any }) {
     const { label, viewMode, control, name, options, dataType = 'string', value: manualValue, ...props } = data;
     const isViewMode = viewMode === true;
-    console.log('data', data);
 
     // Ensure all options have string values for processing
     const normalizedOptions = options?.map((opt: any) => ({

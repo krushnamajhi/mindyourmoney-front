@@ -60,7 +60,6 @@ export function useCreateExpense(groupId?: number) {
                 ...newExpenseData,
                 splits: [], // Simplified for preview
             };
-            console.log(optimisticExpense);
 
             if (previousExpenses) {
                 queryClient.setQueryData<Expense[]>(['expenses', groupId], [

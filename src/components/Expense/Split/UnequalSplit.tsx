@@ -30,8 +30,6 @@ export function UnequalSplit({ amount, members, definitions, onChange, isReadOnl
         return definitions.find(d => Number(d.userId) === Number(userId))?.amount || 0;
     };
 
-    console.log(amount, members, definitions, "exact")
-
     return (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex justify-between items-center px-1">

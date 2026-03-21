@@ -255,7 +255,6 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
             paidByUserId: (!value.paidByUserId || value.paidByUserId === '') ? undefined : Number(value.paidByUserId),
             expenseCategoryId: (!value.expenseCategoryId || value.expenseCategoryId == -1) ? undefined : Number(value.expenseCategoryId),
         };
-        console.log(payload, "payload", value.debtMemberSplits, "value.debtMemberSplits")
         try {
             let id = expenseId
             if (expenseId) {
@@ -277,8 +276,6 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
     if (expenseId && error) {
         return (<ErrorDisplay message="Failed to load expense details." />);
     }
-    console.log(getValues("debtMemberSplits"), "debtMemberSplits")
-    console.log(expense, "expense")
 
     const renderCurrencySymbol = () => {
         const className = cn("h-5 w-5 transition-colors", errors.amount ? "text-red-400" : "text-slate-400 group-focus-within:text-primary-500")

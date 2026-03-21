@@ -7,7 +7,6 @@ export const formattedDate = (date: string) => new Date(date).toLocaleDateString
 });
 
 export const retryService = (failureCount: number, error: APIError) => {
-    console.log(error);
     if (error?.statusCode === 404) return false;
     return failureCount < 3;
 }

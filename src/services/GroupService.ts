@@ -23,7 +23,6 @@ export class GroupService {
     }
 
     static async updateGroup(id: number, updates: Partial<Pick<Group, 'name' | 'description'>>): Promise<Group> {
-        console.log(id, updates, "upadte")
         return await apiClient.put(this.URL + '/' + id, updates);
     }
 

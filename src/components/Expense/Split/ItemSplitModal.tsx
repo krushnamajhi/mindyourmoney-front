@@ -41,7 +41,6 @@ export function ItemSplitModal({
             setDefinitions(item.debtMemberSplitsExpenseItemLines || []);
             setSelectedMemberIds(item.debtMemberSplitsExpenseItemLines || []);
         }
-        console.log(isReadOnly)
     }, [isOpen, initialSplitType, item.debtMemberSplitsExpenseItemLines]);
 
     // Handle Split Type Change - reset definitions smartly
@@ -83,7 +82,6 @@ export function ItemSplitModal({
         <div 
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => {
-                console.log('DEBUG: ItemSplitModal backdrop clicked');
                 onClose();
             }}
         >
@@ -99,7 +97,6 @@ export function ItemSplitModal({
                     <button 
                         type="button"
                         onClick={() => {
-                            console.log('DEBUG: ItemSplitModal X button clicked');
                             onClose();
                         }} 
                         className="p-2 text-slate-400 hover:text-slate-600 rounded-xl transition-all"
@@ -166,7 +163,6 @@ export function ItemSplitModal({
                         <button
                             type="button"
                             onClick={() => {
-                                console.log('DEBUG: ItemSplitModal footer Close button clicked');
                                 onClose();
                             }}
                             className="w-full py-3 bg-primary-900 text-white rounded-xl font-bold text-sm shadow-lg shadow-primary-500/20 hover:bg-primary-800 transition-all flex items-center justify-center space-x-2"
@@ -179,7 +175,6 @@ export function ItemSplitModal({
                             <button
                                 type="button"
                                 onClick={() => {
-                                    console.log('DEBUG: ItemSplitModal footer Cancel button clicked');
                                     onClose();
                                 }}
                                 className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all"
@@ -189,7 +184,6 @@ export function ItemSplitModal({
                             <button
                                 type="button"
                                 onClick={() => {
-                                    console.log('DEBUG: ItemSplitModal footer Save button clicked');
                                     handleSave();
                                 }}
                                 className="px-8 py-3 bg-primary-900 text-white rounded-xl font-bold text-sm shadow-lg shadow-primary-500/20 hover:bg-primary-800 transition-all flex items-center space-x-2"

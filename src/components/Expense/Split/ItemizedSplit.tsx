@@ -138,7 +138,6 @@ export function ItemizedSplit({ items, members, onChange, isReadOnly = false }: 
                 <ItemSplitModal
                     isOpen={true}
                     onClose={() => { 
-                        console.log('DEBUG: ItemizedSplit onClose called');
                         setEditingItemIndex(null);
                     }}
                     members={members}

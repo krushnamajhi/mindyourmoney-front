@@ -4,7 +4,6 @@ import type { Groups } from '../../domain/models';
 
 export default function GroupsSummary({ groups }: { groups: Groups[] | undefined }) {
     const { formatCurrency } = useSettings();
-    console.log(groups)
     let totalYouAreOwed = 0;
     let totalYouOwe = 0;
     groups?.forEach(group => {

@@ -37,7 +37,6 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
     const { setFormErrors, renderError } = useFormErrorsUI();
     const { currency } = useSettings();
     const navigate = useNavigate();
-    console.log(passedData, isViewOnly);
     // --- Default Values ---
     const defaultFormValues: SettleFormState = useMemo(() => {
         if (expenseId && existingExpense) {
@@ -69,7 +68,6 @@ export function ExpenseSettleForm({ expenseId, passedData, onSuccess, onCancel, 
 
     // Sync form when data loads
     useEffect(() => {
-        console.log(passedData, 'passedData', expenseId, existingExpense);
         if (existingExpense || passedData) {
             const values = defaultFormValues;
             (Object.keys(values) as Array<keyof SettleFormState>).forEach((key) => {

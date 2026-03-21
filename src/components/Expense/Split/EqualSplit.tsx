@@ -16,14 +16,12 @@ interface EqualSplitProps {
 
 export function EqualSplit({ amount, members, selectedMemberIds, onChange, isReadOnly = false }: EqualSplitProps) {
     const { user: currentUser } = useAuth();
-    console.log(selectedMemberIds)
 
     const isSelectedMember = (id: number) => {
         return selectedMemberIds.find(m => m.userId === id)
     }
     const toggleMember = (id: number) => {
         if (isReadOnly) return;
-        console.log(selectedMemberIds, "equal")
         const defs : DebtMemberSplits = {userId : id};
         if (isSelectedMember(id)) {
             onChange(selectedMemberIds.filter(m => m.userId !== id).map(m => m));
@@ -35,7 +33,6 @@ export function EqualSplit({ amount, members, selectedMemberIds, onChange, isRea
     const splitAmount = selectedMemberIds.length > 0
         ? amount / selectedMemberIds.length
         : 0;
-    // console.log(selectedMemberIds, members, amount,"equalSplits")
 
     return (
         <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">

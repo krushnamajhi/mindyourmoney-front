@@ -3,7 +3,6 @@ import type { SplitStrategy, SplitResult } from './SplitStrategy';
 
 export class EqualSplitStrategy implements SplitStrategy {
     calculateSplits(totalAmount: number, members: number[], _definitions: DebtMemberSplits[] | DebtMemberSplitExpenseItemLine[]): SplitResult[] {
-        console.log("members", members)
         if (members.length === 0) return [];
 
         const count = members.length;
