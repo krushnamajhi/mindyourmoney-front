@@ -18,4 +18,10 @@ export class UserService {
         // Simulate authenticated user
         return await apiClient.get(`${this.URL}/current/me`).then(response => response.data);
     }
+
+    static async searchUser(searchedValue : string): Promise<User[]> {
+        // Simulate authenticated user
+        const response =  await apiClient.get(`${this.URL}/search/q=${encodeURIComponent(searchedValue)}`)
+        return response.data?.data;
+    }
 }

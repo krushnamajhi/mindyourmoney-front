@@ -15,7 +15,7 @@ export function useGroup(id: number) {
         queryKey: ['groups', id],
         queryFn: async () => await GroupService.getGroupById(id),
         enabled: !!id,
-        retry:retryService
+        retry: retryService
     });
 }
 
@@ -30,7 +30,7 @@ export function useGroupMembersByGroup(groupId?: number) {
 export function useCreateGroup() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (data: { name: string; description?: string; groupMemberIds: string[] }) =>
+        mutationFn: (data: { name: string; description?: string; groupMemberIds: number[] }) =>
             GroupService.createGroup(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });

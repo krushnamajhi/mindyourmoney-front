@@ -2,10 +2,10 @@ import { Check } from "lucide-react";
 import { clsx } from "clsx";
 import type { User } from "../../domain/models";
 
-export function GroupMember({ user, isSelected, toggleMember }: { user: User, isSelected: boolean, toggleMember: (userId: string | number) => void }) {
+export function GroupMember({ user, isSelected, toggleMember }: { user: User, isSelected: boolean, toggleMember: (userId: User) => void }) {
     return (
         <div
-            onClick={() => toggleMember(user.id)}
+            onClick={() => toggleMember(user)}
             className={clsx(
                 "flex items-center p-4 cursor-pointer transition-all duration-300 relative overflow-hidden group/member",
                 isSelected ? "bg-primary-50/50" : "hover:bg-white"

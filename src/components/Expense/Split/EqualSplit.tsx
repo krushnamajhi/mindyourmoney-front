@@ -22,7 +22,7 @@ export function EqualSplit({ amount, members, selectedMemberIds, onChange, isRea
     }
     const toggleMember = (id: number) => {
         if (isReadOnly) return;
-        const defs : DebtMemberSplits = {userId : id};
+        const defs: DebtMemberSplits = { userId: id };
         if (isSelectedMember(id)) {
             onChange(selectedMemberIds.filter(m => m.userId !== id).map(m => m));
         } else {

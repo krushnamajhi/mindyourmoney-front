@@ -1,8 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Search } from 'lucide-react';
+import { useState } from 'react';
 import { useCreateGroup } from '../../hooks/useGroups';
-import { useUsers } from '../../hooks/useUsers';
-import { GroupMember } from './GroupMember';
 import { useAuth } from '../../context/AuthContext';
 import ModalContainer from '../Containers/Modal/ModalContainer';
 import { useAppDispatch } from '../../store/hooks';
@@ -10,27 +7,20 @@ import { closeModal } from '../../store/modalSlice';
 import { useFormErrorsUI } from '../../hooks/UI/useFormErrorsUI';
 import FormInput from '../UI/Form/FormInput';
 import FormInputTextArea from '../UI/Form/FormInputTextArea';
+import SearchInput from '../UI/SearchInput';
+import GroupMemberList from './GroupMemberList';
+import type { User } from '../../domain/models';
 
 export function GroupForm() {
     const [name, setName] = useState('');
     const { user: currentUser } = useAuth();
     const [description, setDescription] = useState('');
-    const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedMember, setSelectedMember] = useState<User[]>(currentUser ? [currentUser] : []);
     const { setFormErrors, renderError } = useFormErrorsUI();
 
-    const { data: allUsers, isLoading } = useUsers();
     const createGroup = useCreateGroup();
     const dispatch = useAppDispatch();
-    // dispatch(setPending(createGroup.isPending))
-
-    useEffect(() => {
-        if (currentUser) {
-            if (selectedMemberIds.length === 0) {
-                setSelectedMemberIds([String(currentUser.id)]);
-            }
-        }
-    }, [])
 
     const handleSubmit = async (e: React.SubmitEvent) => {
         e.preventDefault();
@@ -38,28 +28,13 @@ export function GroupForm() {
             await createGroup.mutateAsync({
                 name,
                 description: description || undefined,
-                groupMemberIds: selectedMemberIds,
+                groupMemberIds: selectedMember.map(user => user.id),
             });
             dispatch(closeModal());
         } catch (error: any) {
             setFormErrors(error);
         }
     };
-
-    const toggleMember = (userId: string | number) => {
-        const normalizedUserId = String(userId);
-        if (selectedMemberIds.includes(normalizedUserId)) {
-            if (currentUser && normalizedUserId === String(currentUser.id)) return;
-            setSelectedMemberIds(prev => prev.filter(id => id !== normalizedUserId));
-        } else {
-            setSelectedMemberIds(prev => [...prev, normalizedUserId]);
-        }
-    };
-
-    const filteredUsers = allUsers?.filter(user =>
-        user.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
 
 
     const renderModal = () => {
@@ -91,11 +66,22 @@ export function GroupForm() {
                         <div className="flex items-center justify-between px-1">
                             <label className="block text-xs font-black text-slate-500 uppercase tracking-widest">Select Members</label>
                             <span className="text-[10px] font-bold text-primary-700 bg-primary-100/50 px-2 py-0.5 rounded-full">
-                                {selectedMemberIds.length} SELECTED
+                                {selectedMember.length} SELECTED
                             </span>
                         </div>
-
-                        <div className="relative group/search">
+                        <div>
+                            <SearchInput setDebouncedValue={setSearchQuery} placeholder='Enter name or Email' />
+                            <GroupMemberList
+                                searchQuery={searchQuery}
+                                currentUserSelect={true}
+                                setSelectedMember={setSelectedMember}
+                                selectedMembers={selectedMember}
+                            />
+                            <p className="text-[10px] text-slate-400 font-medium px-1 flex items-center italic">
+                                * Scroll to see more users and click to select members for this group.
+                            </p>
+                        </div>
+                        {/* <div className="relative group/search">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/search:text-primary-600 transition-colors" size={16} />
                             <input
                                 type="text"
@@ -127,7 +113,7 @@ export function GroupForm() {
                         </div>
                         <p className="text-[10px] text-slate-400 font-medium px-1 flex items-center italic">
                             * Scroll to see more users and click to select members for this group.
-                        </p>
+                        </p> */}
                     </div>
                 </form>
             </ModalContainer>
