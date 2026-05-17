@@ -16,3 +16,13 @@ export function useCurrentUser() {
         staleTime: Infinity,
     });
 }
+
+export function useSearchUser(searchedValue: string) {
+    console.log("searching", searchedValue)
+    return useQuery({
+        queryKey: ['users', 'search', searchedValue],
+        queryFn: async () => await UserService.searchUser(searchedValue),
+        enabled: !!searchedValue && searchedValue.length >= 2,
+        staleTime: 1, // 5 minutes
+    });
+}

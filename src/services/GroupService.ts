@@ -18,7 +18,7 @@ export class GroupService {
         return response.data;
     }
 
-    static async createGroup(data: { name: string; description?: string; groupMemberIds: string[] }): Promise<Group> {
+    static async createGroup(data: { name: string; description?: string; groupMemberIds: number[] }): Promise<Group> {
         return await apiClient.post(this.URL + '/create', data);
     }
 

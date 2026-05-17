@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect, type Dispatch, type SetStateAction } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { Calendar, DollarSign, Euro, IndianRupee, JapaneseYen, ReceiptText, Users } from 'lucide-react';
@@ -6,7 +6,7 @@ import { useCreateExpense, useExpenseDetails, useUpdateExpense } from '../../hoo
 import { useExpenseCategories } from '../../hooks/useExpenseCategories';
 import { useGroupMembersByGroup, useGroups } from '../../hooks/useGroups';
 import { useUsers } from '../../hooks/useUsers';
-import { CreateExpenseSchema, DebtMemberSplitsSchema, ExpenseItemLinesSchema, type CreateExpenseDto, type ExpenseItemLine, type UpdateExpenseDto } from '../../domain/models';
+import { CreateExpenseSchema, DebtMemberSplitsSchema, ExpenseItemLinesSchema, type CreateExpenseDto, type ExpenseItemLine, type UpdateExpenseDto, type User } from '../../domain/models';
 import { cn } from '../../utils/cn';
 import { getCategoryTheme } from '../../utils/categoryThemes';
 import { EqualSplit } from './Split/EqualSplit';
@@ -25,6 +25,12 @@ import { useSettings } from '../../context/SettingsContext';
 import FormInputTextArea from '../UI/Form/FormInputTextArea';
 import FormInput from '../UI/Form/FormInput';
 import { useNavigate } from 'react-router-dom';
+import SearchInput from '../UI/SearchInput';
+import GroupMemberList from '../Group/GroupMemberList';
+import { SelectGroupInExpenseModal } from './SelectGroupInExpenseModal';
+import { useAppDispatch } from "../../store/hooks";
+import { openModal } from '../../store/modalSlice';
+
 
 const ErrorMsg = ({ error }: { error?: { message?: string } }) => {
     if (!error?.message) return null;
@@ -67,13 +73,38 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
     const { data: categories } = useExpenseCategories();
     const { data: groups } = useGroups();
     const { data: allUsers } = useUsers();
-    const { data: expense, isLoading, error } = expenseId? useExpenseDetails(expenseId) : {data: null};
+    const { data: expense, isLoading, error } = expenseId ? useExpenseDetails(expenseId) : { data: null };
     const createExpense = useCreateExpense(groupId);
     const updateExpense = useUpdateExpense(groupId);
     const isPending = createExpense.isPending;
     const { setFormErrors, renderError } = useFormErrorsUI();
     const { currency } = useSettings();
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const [availableMembers, setAvailableMembers] = useState<User[]>([]);
+
+    // When editing/viewing, seed availableMembers from the expense's existing splits
+    useEffect(() => {
+        if (!expenseId || !expense || !allUsers) return;
+
+        const involvedIds = new Set<number>();
+
+        // Collect from top-level debt splits
+        (expense.debtMemberSplits || []).forEach((s: { userId: number }) => involvedIds.add(s.userId));
+
+        // Collect from itemized line splits
+        (expense.expenseItemLines || []).forEach((line: { debtMemberSplitsExpenseItemLines?: { userId: number }[] }) => {
+            (line.debtMemberSplitsExpenseItemLines || []).forEach((s) => involvedIds.add(s.userId));
+        });
+
+        // Also include the payer
+        if (expense.paidByUserId) involvedIds.add(expense.paidByUserId);
+
+        const members = allUsers.filter((u: User) => involvedIds.has(u.id));
+        if (members.length > 0) {
+            setAvailableMembers(members);
+        }
+    }, [expenseId, expense, allUsers]);
 
     // ... (Memo/Effect code remains same, skipping for brevity but keeping in mind the structure)
     const defaultFormValues: FormState = useMemo(() => {
@@ -131,6 +162,7 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
                 setValue(key, values[key], { shouldValidate: true, shouldDirty: true, shouldTouch: true });
             });
         }
+        console.log(defaultFormValues);
     }, [expense, expenseId, setValue, defaultFormValues]);
 
 
@@ -142,6 +174,8 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
     const watchedPaidByUserId = watch('paidByUserId');
     const watchedDebtMemberSplits = watch('debtMemberSplits');
     const watchedExpenseItemLines = watch('expenseItemLines');
+
+    const [searchQuery, setSearchQuery] = useState('');
 
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
@@ -159,64 +193,73 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
     const { data: groupMembersByGroup } = useGroupMembersByGroup(selectedGroupId)
 
     useEffect(() => {
-        if(selectedGroupId != expense?.groupId)
-        {
+        if (selectedGroupId != expense?.groupId) {
             setValue('expenseItemLines', []);
             setValue('debtMemberSplits', []);
         }
 
-    },[selectedGroupId])
+    }, [selectedGroupId])
 
-    const availableMembers = useMemo(() => {
-        if (!selectedGroupId || !groups) return allUsers || [];
-        const group = groups.find(g => g.id == selectedGroupId);
-        if (!group) return allUsers || [];
-        const activeMembers = group.groupMembers || [];
+    // const availableMembers = useMemo(() => {
+    //     if (!selectedGroupId || !groups) return allUsers || [];
+    //     const group = groups.find(g => g.id == selectedGroupId);
+    //     if (!group) return allUsers || [];
+    //     const activeMembers = group.groupMembers || [];
 
-        if (!isViewOnly || !groupMembersByGroup || groupMembersByGroup.length === 0) {
-            return activeMembers;
-        }
+    //     if (!isViewOnly || !groupMembersByGroup || groupMembersByGroup.length === 0) {
+    //         return activeMembers;
+    //     }
 
-        const paidByUserId = watchedPaidByUserId ? Number(watchedPaidByUserId): undefined;
-        const debtMemberSplits = (watchedDebtMemberSplits || []) as Array<{ userId: number }>;
-        const expenseItemLines = (watchedExpenseItemLines || []) as Array<{
-            debtMemberSplitsExpenseItemLines?: Array<{ userId: number }>
-        }>;
+    //     const paidByUserId = watchedPaidByUserId ? Number(watchedPaidByUserId) : undefined;
+    //     const debtMemberSplits = (watchedDebtMemberSplits || []) as Array<{ userId: number }>;
+    //     const expenseItemLines = (watchedExpenseItemLines || []) as Array<{
+    //         debtMemberSplitsExpenseItemLines?: Array<{ userId: number }>
+    //     }>;
 
-        const involvedMemberIds = new Set<number>();
-        if (paidByUserId !== undefined && paidByUserId !== null && String(paidByUserId) !== '') {
-            involvedMemberIds.add(paidByUserId);
-        }
-        debtMemberSplits.forEach((split) => involvedMemberIds.add(split.userId));
-        expenseItemLines.forEach((line) => {
-            (line.debtMemberSplitsExpenseItemLines || []).forEach((split) => {
-                involvedMemberIds.add(split.userId);
-            });
-        });
+    //     const involvedMemberIds = new Set<number>();
+    //     if (paidByUserId !== undefined && paidByUserId !== null && String(paidByUserId) !== '') {
+    //         involvedMemberIds.add(paidByUserId);
+    //     }
+    //     debtMemberSplits.forEach((split) => involvedMemberIds.add(split.userId));
+    //     expenseItemLines.forEach((line) => {
+    //         (line.debtMemberSplitsExpenseItemLines || []).forEach((split) => {
+    //             involvedMemberIds.add(split.userId);
+    //         });
+    //     });
 
-        return groupMembersByGroup
-            .filter((member) => member.isActive || involvedMemberIds.has(member.userId))
-            .map((member) => ({
-                ...member.user,
-                id: member.userId,
-                isActive: member.isActive
-            }));
-    }, [
-        selectedGroupId,
-        groups,
-        allUsers,
-        isViewOnly,
-        groupMembersByGroup,
-        watchedPaidByUserId,
-        watchedDebtMemberSplits,
-        watchedExpenseItemLines
-    ]);
+    //     return groupMembersByGroup
+    //         .filter((member) => member.isActive || involvedMemberIds.has(member.userId))
+    //         .map((member) => ({
+    //             ...member.user,
+    //             id: member.userId,
+    //             isActive: member.isActive
+    //         }));
+    // }, [
+    //     selectedGroupId,
+    //     groups,
+    //     allUsers,
+    //     isViewOnly,
+    //     groupMembersByGroup,
+    //     watchedPaidByUserId,
+    //     watchedDebtMemberSplits,
+    //     watchedExpenseItemLines
+    // ]);
+
+    const currentSelectedUsers = useMemo(() => {
+        const ids = new Set(watchedDebtMemberSplits?.map(s => s.userId));
+        return availableMembers.filter(m => ids.has(m.id));
+    }, [watchedDebtMemberSplits, availableMembers]);
+
+    const handleSetSelectedMember: Dispatch<SetStateAction<User[]>> = (action: any) => {
+        const nextUsers = typeof action === 'function' ? action(currentSelectedUsers) : action;
+        setValue('debtMemberSplits', nextUsers.map((u: User) => ({ userId: u.id })), { shouldValidate: true, shouldDirty: true });
+    };
 
     useEffect(() => {
         if (!isShared || availableMembers.length === 0 || isViewOnly) return;
         if (splitType === 'EQUAL') {
             if (getValues('debtMemberSplits')?.length === 0) {
-                setValue('debtMemberSplits', availableMembers. map(m => ({ userId: Number(m.id) })));
+                setValue('debtMemberSplits', availableMembers.map(m => ({ userId: Number(m.id) })));
             }
             else {
                 const validIds = new Set(availableMembers.map(m => String(m.id)));
@@ -407,6 +450,18 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
                                 <input
                                     type="checkbox"
                                     className="sr-only peer"
+                                    onClick={() => {
+                                        !isShared && dispatch(openModal({
+                                            modalType: 'form',
+                                            modalId: 'selectGroupInExpense',
+                                            data: {
+                                                title: 'Select Group or Individual',
+                                                icon: 'Users',
+                                                description: 'Choose to split the expense with a group or individually',
+                                                submitLabel: 'Select',
+                                            }
+                                        }));
+                                    }}
                                     {...register('isShared')}
                                 />
                                 <div className="w-12 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
@@ -417,19 +472,36 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
                     {isShared && (
                         <div className="py-6 space-y-6 animate-in slide-in-from-top-4 fade-in duration-300">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <FormSelect
-                                    data={{
-                                        label: 'Group (Optional)',
-                                        name: 'groupId',
-                                        control,
-                                        viewMode: isViewOnly,
-                                        options: [
-                                            { label: '👥 No Group (Individual Split)', value: '' },
-                                            ...(groups?.map(g => ({ label: `🏠 ${g.name}`, value: g.id })) || [])
-                                        ],
-                                        placeholder: 'Select Group',
-                                    }}
-                                />
+                                {/* Group — button in edit mode, read-only label in view mode */}
+                                <div className="space-y-3">
+                                    <label className="block text-xs font-black text-slate-500 uppercase tracking-widest px-1">Group (Optional)</label>
+                                    {isViewOnly ? (
+                                        <div className="w-full px-5 text-slate-800 font-bold min-h-[50px] flex items-center">
+                                            {selectedGroupId
+                                                ? (groups?.find(g => g.id == selectedGroupId)?.name ?? 'Group')
+                                                : <span className="text-slate-400 italic">No Selection</span>}
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => dispatch(openModal({
+                                                modalType: 'form',
+                                                modalId: 'selectGroupInExpense',
+                                                data: {
+                                                    title: 'Select Group or Individual',
+                                                    icon: 'Users',
+                                                    description: 'Choose to split the expense with a group or individually',
+                                                    submitLabel: 'Select',
+                                                }
+                                            }))}
+                                            className="w-full px-5 py-3 border border-slate-100 bg-slate-50 rounded-2xl text-left font-bold text-slate-800 shadow-inner focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/30 transition-all"
+                                        >
+                                            {selectedGroupId
+                                                ? `🏠 ${groups?.find(g => g.id == selectedGroupId)?.name ?? 'Group'}`
+                                                : <span className="text-slate-400 font-medium">👥 No Group (Individual Split)</span>}
+                                        </button>
+                                    )}
+                                </div>
                                 <FormSelect
                                     data={{
                                         label: 'Paid By',
@@ -532,7 +604,10 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
                     )}
                 </div>
             </form>
-
+            <SelectGroupInExpenseModal
+                setAvailableMembers={setAvailableMembers}
+                setSelectedGroupId={(gid) => setValue('groupId', gid, { shouldValidate: true, shouldDirty: true })}
+            />
             {/* Footer Actions */}
             <div className="p-6 border-t border-slate-100 bg-white flex space-x-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10">
                 <button

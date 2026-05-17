@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save } from 'lucide-react';
-import type { User, SplitType, DebtMemberSplitExpenseItemLine, ExpenseItemLine, DebtMemberSplits } from '../../../domain/models';
+import type { User, SplitType, DebtMemberSplitExpenseItemLine, ExpenseItemLine } from '../../../domain/models';
 import { EqualSplit } from './EqualSplit';
 import { PercentageSplit } from './PercentageSplit';
 import { SharesSplit } from './SharesSplit';
@@ -79,13 +79,13 @@ export function ItemSplitModal({
     // For now, let's just handle the render logic here.
 
     return createPortal(
-        <div 
+        <div
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => {
                 onClose();
             }}
         >
-            <div 
+            <div
                 className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh]"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -94,11 +94,11 @@ export function ItemSplitModal({
                         <h3 className="text-lg font-black text-slate-800">Split "{getItemName()}"</h3>
                         <p className="text-xs text-slate-500 font-bold">${item.amount.toFixed(2)}</p>
                     </div>
-                    <button 
+                    <button
                         type="button"
                         onClick={() => {
                             onClose();
-                        }} 
+                        }}
                         className="p-2 text-slate-400 hover:text-slate-600 rounded-xl transition-all"
                     >
                         <X size={20} />
