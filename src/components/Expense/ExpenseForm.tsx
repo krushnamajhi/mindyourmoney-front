@@ -1,11 +1,10 @@
-import { useMemo, useState, useRef, useEffect, type Dispatch, type SetStateAction } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { Calendar, DollarSign, Euro, IndianRupee, JapaneseYen, ReceiptText, Users } from 'lucide-react';
 import { useCreateExpense, useExpenseDetails, useUpdateExpense } from '../../hooks/useExpenses';
 import { useExpenseCategories } from '../../hooks/useExpenseCategories';
-import { useGroupMembersByGroup, useGroups } from '../../hooks/useGroups';
-import { useUsers } from '../../hooks/useUsers';
+import { useGroups } from '../../hooks/useGroups';
 import { CreateExpenseSchema, DebtMemberSplitsSchema, ExpenseItemLinesSchema, type CreateExpenseDto, type ExpenseItemLine, type UpdateExpenseDto, type User } from '../../domain/models';
 import { cn } from '../../utils/cn';
 import { getCategoryTheme } from '../../utils/categoryThemes';
@@ -25,8 +24,6 @@ import { useSettings } from '../../context/SettingsContext';
 import FormInputTextArea from '../UI/Form/FormInputTextArea';
 import FormInput from '../UI/Form/FormInput';
 import { useNavigate } from 'react-router-dom';
-import SearchInput from '../UI/SearchInput';
-import GroupMemberList from '../Group/GroupMemberList';
 import { SelectGroupInExpenseModal } from './SelectGroupInExpenseModal';
 import { useAppDispatch } from "../../store/hooks";
 import { openModal } from '../../store/modalSlice';
@@ -72,7 +69,6 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
     const { user: currentUser } = useAuth();
     const { data: categories } = useExpenseCategories();
     const { data: groups } = useGroups();
-    const { data: allUsers } = useUsers();
     const { data: expense, isLoading, error } = expenseId ? useExpenseDetails(expenseId) : { data: null };
     const createExpense = useCreateExpense(groupId);
     const updateExpense = useUpdateExpense(groupId);
@@ -82,29 +78,6 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const [availableMembers, setAvailableMembers] = useState<User[]>([]);
-
-    // When editing/viewing, seed availableMembers from the expense's existing splits
-    useEffect(() => {
-        if (!expenseId || !expense || !allUsers) return;
-
-        const involvedIds = new Set<number>();
-
-        // Collect from top-level debt splits
-        (expense.debtMemberSplits || []).forEach((s: { userId: number }) => involvedIds.add(s.userId));
-
-        // Collect from itemized line splits
-        (expense.expenseItemLines || []).forEach((line: { debtMemberSplitsExpenseItemLines?: { userId: number }[] }) => {
-            (line.debtMemberSplitsExpenseItemLines || []).forEach((s) => involvedIds.add(s.userId));
-        });
-
-        // Also include the payer
-        if (expense.paidByUserId) involvedIds.add(expense.paidByUserId);
-
-        const members = allUsers.filter((u: User) => involvedIds.has(u.id));
-        if (members.length > 0) {
-            setAvailableMembers(members);
-        }
-    }, [expenseId, expense, allUsers]);
 
     // ... (Memo/Effect code remains same, skipping for brevity but keeping in mind the structure)
     const defaultFormValues: FormState = useMemo(() => {
@@ -190,8 +163,6 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const { data: groupMembersByGroup } = useGroupMembersByGroup(selectedGroupId)
-
     useEffect(() => {
         if (selectedGroupId != expense?.groupId) {
             setValue('expenseItemLines', []);
@@ -249,11 +220,6 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
         const ids = new Set(watchedDebtMemberSplits?.map(s => s.userId));
         return availableMembers.filter(m => ids.has(m.id));
     }, [watchedDebtMemberSplits, availableMembers]);
-
-    const handleSetSelectedMember: Dispatch<SetStateAction<User[]>> = (action: any) => {
-        const nextUsers = typeof action === 'function' ? action(currentSelectedUsers) : action;
-        setValue('debtMemberSplits', nextUsers.map((u: User) => ({ userId: u.id })), { shouldValidate: true, shouldDirty: true });
-    };
 
     useEffect(() => {
         if (!isShared || availableMembers.length === 0 || isViewOnly) return;
