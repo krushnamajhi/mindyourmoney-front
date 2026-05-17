@@ -144,12 +144,6 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
     const splitType = watch('splitType');
     const amount = watch('amount');
     const expenseDate = watch('expenseDate');
-    const watchedPaidByUserId = watch('paidByUserId');
-    const watchedDebtMemberSplits = watch('debtMemberSplits');
-    const watchedExpenseItemLines = watch('expenseItemLines');
-
-    const [searchQuery, setSearchQuery] = useState('');
-
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
 
@@ -170,56 +164,6 @@ export function ExpenseForm({ groupId, isSharedInitial = false, onSuccess, onCan
         }
 
     }, [selectedGroupId])
-
-    // const availableMembers = useMemo(() => {
-    //     if (!selectedGroupId || !groups) return allUsers || [];
-    //     const group = groups.find(g => g.id == selectedGroupId);
-    //     if (!group) return allUsers || [];
-    //     const activeMembers = group.groupMembers || [];
-
-    //     if (!isViewOnly || !groupMembersByGroup || groupMembersByGroup.length === 0) {
-    //         return activeMembers;
-    //     }
-
-    //     const paidByUserId = watchedPaidByUserId ? Number(watchedPaidByUserId) : undefined;
-    //     const debtMemberSplits = (watchedDebtMemberSplits || []) as Array<{ userId: number }>;
-    //     const expenseItemLines = (watchedExpenseItemLines || []) as Array<{
-    //         debtMemberSplitsExpenseItemLines?: Array<{ userId: number }>
-    //     }>;
-
-    //     const involvedMemberIds = new Set<number>();
-    //     if (paidByUserId !== undefined && paidByUserId !== null && String(paidByUserId) !== '') {
-    //         involvedMemberIds.add(paidByUserId);
-    //     }
-    //     debtMemberSplits.forEach((split) => involvedMemberIds.add(split.userId));
-    //     expenseItemLines.forEach((line) => {
-    //         (line.debtMemberSplitsExpenseItemLines || []).forEach((split) => {
-    //             involvedMemberIds.add(split.userId);
-    //         });
-    //     });
-
-    //     return groupMembersByGroup
-    //         .filter((member) => member.isActive || involvedMemberIds.has(member.userId))
-    //         .map((member) => ({
-    //             ...member.user,
-    //             id: member.userId,
-    //             isActive: member.isActive
-    //         }));
-    // }, [
-    //     selectedGroupId,
-    //     groups,
-    //     allUsers,
-    //     isViewOnly,
-    //     groupMembersByGroup,
-    //     watchedPaidByUserId,
-    //     watchedDebtMemberSplits,
-    //     watchedExpenseItemLines
-    // ]);
-
-    const currentSelectedUsers = useMemo(() => {
-        const ids = new Set(watchedDebtMemberSplits?.map(s => s.userId));
-        return availableMembers.filter(m => ids.has(m.id));
-    }, [watchedDebtMemberSplits, availableMembers]);
 
     useEffect(() => {
         if (!isShared || availableMembers.length === 0 || isViewOnly) return;
